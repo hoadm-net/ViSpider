@@ -1,0 +1,59 @@
+# Environment variables
+.env
+
+# Python
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+.Python
+venv/
+env/
+ENV/
+build/
+develop-eggs/
+dist/
+downloads/
+eggs/
+.eggs/
+lib/
+lib64/
+parts/
+sdist/
+var/
+wheels/
+*.egg-info/
+.installed.cfg
+*.egg
+
+# Jupyter Notebook
+.ipynb_checkpoints
+
+# IDEs
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Data cache and embeddings
+*_cache.json
+embeddings_cache/
+
+# Large generated files
+data/manual_translations/vispider_embeddings.json
+embeddings_for_training.npz
+vispider_with_embeddings.json
+
+# Analysis outputs
+similarity_analysis.json
+bottom_100_for_review.json
+embedding_errors.json
+
+# Results
+results_*.json
+similarity_analysis_*.json
