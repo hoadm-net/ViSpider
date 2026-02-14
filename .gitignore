@@ -1,6 +1,3 @@
-# Environment variables
-.env
-
 # Python
 __pycache__/
 *.py[cod]
@@ -10,50 +7,61 @@ __pycache__/
 venv/
 env/
 ENV/
-build/
-develop-eggs/
-dist/
-downloads/
-eggs/
-.eggs/
-lib/
-lib64/
-parts/
-sdist/
-var/
-wheels/
-*.egg-info/
-.installed.cfg
-*.egg
+.venv
+pip-log.txt
+pip-delete-this-directory.txt
+.pytest_cache/
+.coverage
+htmlcov/
 
-# Jupyter Notebook
-.ipynb_checkpoints
+# Virtual Environment
+venv/
+ENV/
+env/
 
-# IDEs
+# IDE
 .vscode/
 .idea/
 *.swp
 *.swo
-*~
-
-# OS
+*.swn
 .DS_Store
-Thumbs.db
 
-# Data cache and embeddings
-*_cache.json
-embeddings_cache/
+# Project specific - temporary analysis results
+results/
+experiments/
+archive/
 
-# Large generated files
-data/manual_translations/vispider_embeddings.json
-embeddings_for_training.npz
-vispider_with_embeddings.json
-
-# Analysis outputs
-similarity_analysis.json
-bottom_100_for_review.json
+# Embeddings cache (can regenerate)
+embeddings_cache.json
 embedding_errors.json
 
-# Results
-results_*.json
-similarity_analysis_*.json
+# Environment variables
+.env
+!.env.example
+
+# Jupyter
+.ipynb_checkpoints/
+*.ipynb
+
+# Logs
+*.log
+
+# Large files (use Git LFS if needed)
+*.bin
+*.pkl
+*.h5
+
+# macOS
+.DS_Store
+.AppleDouble
+.LSOverride
+
+# Backup files
+*.bak
+*.backup
+*~
+
+# Temporary files
+*.tmp
+*.temp

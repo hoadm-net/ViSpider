@@ -1,83 +1,55 @@
 # Spider Dataset Overview
 
-## Introduction
+## What is Spider?
 
-Spider is a large-scale, complex, and cross-domain semantic parsing and text-to-SQL dataset. It was introduced in the EMNLP 2018 paper and has become a widely-used benchmark for evaluating natural language interfaces to databases.
+Spider is a large-scale text-to-SQL benchmark dataset for semantic parsing. It evaluates the ability of models to convert natural language questions into SQL queries across diverse database schemas.
 
-**Key Challenge**: Models must generalize to both new SQL queries AND new database schemas.
+**Official Website**: https://yale-lily.github.io/spider
 
-## Dataset Statistics
+## Key Features
 
-### Size
-- **Total Questions**: 11,840
-  - Train: 8,659 (7,000 from Spider + 1,659 from others)
-  - Dev: 1,034
-  - Test: 2,147
-- **Unique SQL Queries**: 6,448
-- **Databases**: 206 across 138 different domains
-  - Train: 146 databases
-  - Dev: 20 databases  
-  - Test: 40 databases
+### Cross-Domain
+- 200+ databases across 138 different domains (academic, music, sports, business, healthcare, etc.)
+- Train and test sets use completely different databases
+- Models must generalize to unseen database schemas
 
-### Complexity
-- Average SQL query length: ~20.4 tokens
-- Average question length: ~13.4 tokens
-- Contains complex SQL with:
-  - Multiple joins
-  - Nested queries
-  - Set operations (UNION, INTERSECT, EXCEPT)
-  - Aggregations (COUNT, SUM, AVG, MIN, MAX)
-  - GROUP BY, HAVING, ORDER BY clauses
+### Complex SQL
+Unlike simple datasets (e.g., WikiSQL), Spider includes:
+- Multi-table joins
+- Nested subqueries
+- Set operations (UNION, INTERSECT, EXCEPT)
+- Aggregations with GROUP BY, HAVING, ORDER BY
 
-## Key Characteristics
-
-1. **Cross-Domain**: Covers 138 different domains (e.g., academic, music, sports, business, healthcare)
-
-2. **Complex SQL**: Unlike WikiSQL (simple single-table queries), Spider includes:
-   - Multi-table joins
-   - Nested subqueries
-   - Complex WHERE conditions
-   - Multiple aggregation functions
-
-3. **Schema Generalization**: Train and test sets have completely different databases, requiring models to understand and adapt to new schemas
-
-4. **Human-Annotated**: Annotated by 11 Yale students with quality control
+### Difficulty Levels
+Questions are categorized into 4 difficulty levels:
+- **Easy**: Simple SELECT with basic filtering
+- **Medium**: Joins and/or aggregations
+- **Hard**: Multiple joins, nested queries
+- **Extra Hard**: Complex nested queries, set operations
 
 ## Data Structure
 
-### Question-SQL Pairs
-Each example contains:
-- `question`: Natural language question
-- `query`: Corresponding SQL query
+Each sample contains:
+- `question`: Natural language question in English
+- `query`: Target SQL query
 - `db_id`: Database identifier
-- `question_toks`: Tokenized question
-- `query_toks`: Tokenized SQL query
-- `sql`: Parsed SQL structure (nested representation)
+- `hardness`: Difficulty level
+- Supporting files: database schemas, table contents
 
-### Database Schemas
-The `tables.json` file contains:
-- `db_id`: Database identifier
-- `table_names`: Table names in the database
-- `column_names`: Column names with table references
-- `column_types`: Data types (text, number, time, boolean, others)
-- `primary_keys`: Primary key column indices
-- `foreign_keys`: Foreign key relationships between tables
+## Dataset Split
 
-### SQLite Databases
-- Each database stored as SQLite3 file
-- Contains actual table content for execution-based evaluation
+- **Train**: ~8,600 questions from Spider + other datasets
+- **Dev**: ~1,000 questions (20 databases, different from train)
+- **Test**: ~2,100 questions (40 databases, held out for evaluation)
 
-## Evaluation Metrics
+## Why Spider?
 
-1. **Exact Set Match**: Component-wise comparison of SQL clauses (official metric until 2020)
-2. **Test Suite Accuracy**: Uses multiple test cases per query (official metric since 2020)
-3. **Execution Accuracy**: Compares query execution results
+1. **Realistic**: Real-world complexity with multi-table databases
+2. **Challenging**: Requires schema understanding and SQL composition
+3. **Standard Benchmark**: Widely used in NLP/DB research community
+4. **Well-Documented**: Clear schema definitions and annotations
 
-## Sample Domains
+## References
 
-The dataset includes diverse domains such as:
-- academic, aircraft, apartment_rentals, baseball, battle_death
-- browser_web, car, cinema, college, concert_singer
-- customer_complaints, department_store, e_learning, flight, hospital
-- insurance, music, restaurant, student, world_1
-- And 118 more domains...
+- Paper: "Spider: A Large-Scale Human-Labeled Dataset for Complex and Cross-Domain Semantic Parsing and Text-to-SQL Task" (Yu et al., EMNLP 2018)
+- Dataset: Available at https://yale-lily.github.io/spider
