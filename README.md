@@ -149,6 +149,9 @@ python3 01_parse_label_studio.py
 # 2. Compute embeddings and quality scores
 python3 02_compute_embeddings.py
 
+# 2b. Extract SQL patterns (rule-based validation)
+python3 02b_extract_sql_patterns.py
+
 # 3. Analyze translation quality distribution
 python3 03_analyze_quality.py
 
@@ -217,7 +220,8 @@ Each sample in ViSpider contains:
   "vi_question": "Chúng ta có bao nhiêu ca sĩ?",
   "query": "SELECT count(*) FROM singer",
   "hardness": "easy",
-  "patterns": ["basic_select", "count"]
+  "sql_patterns": ["SELECT", "FROM", "COUNT"],
+  "sql_complexity": "basic"
 }
 ```
 

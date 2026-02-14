@@ -34,6 +34,7 @@ Run from `scripts/phase1_manual/` directory:
 |--------|---------|
 | `01_parse_label_studio.py` | Parse Label Studio export to ViSpider format |
 | `02_compute_embeddings.py` | Generate LaBSE embeddings and similarities |
+| `02b_extract_sql_patterns.py` | Extract SQL patterns (rule-based validation) |
 | `03_analyze_quality.py` | Analyze quality distribution |
 | `04_extract_low_quality.py` | Extract samples needing review (< 0.75) |
 | `05_filter_by_quality.py` | Create filtered high-quality dataset |
@@ -46,6 +47,7 @@ Run from `scripts/phase1_manual/` directory:
 cd scripts/phase1_manual
 python3 01_parse_label_studio.py
 python3 02_compute_embeddings.py
+python3 02b_extract_sql_patterns.py
 python3 03_analyze_quality.py
 python3 04_extract_low_quality.py
 ```

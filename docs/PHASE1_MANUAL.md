@@ -39,7 +39,8 @@ Phase 1 focuses on manually translating 2,000 high-quality samples from the Spid
   "vi_question": "Chúng ta có bao nhiêu ca sĩ?",
   "query": "SELECT count(*) FROM singer",
   "hardness": "easy",
-  "patterns": ["basic_select", "count"]
+  "sql_patterns": ["SELECT", "FROM", "COUNT"],
+  "sql_complexity": "basic"
 }
 ```
 
@@ -53,6 +54,29 @@ Phase 1 focuses on manually translating 2,000 high-quality samples from the Spid
 - Automatic caching to resume interrupted runs
 - Cosine similarity computation
 - Progress tracking with tqdm
+
+### Step 3b: Extract SQL Patterns (Rule-Based Validation)
+**Script**: `scripts/phase1_manual/02b_extract_sql_patterns.py`
+
+**Purpose**: Extract SQL operators and patterns from queries for validation
+
+**Features**:
+- Detects 30+ SQL patterns (aggregations, joins, subqueries, etc.)
+- Categorizes query complexity (basic/intermediate/advanced/expert)
+- Validates SQL structure preservation
+- Generates pattern distribution statistics
+
+**Output Fields Added**:
+- `sql_patterns`: List of operators (e.g., ["SELECT", "COUNT", "GROUP_BY"])
+- `sql_complexity`: Complexity category
+
+**Validation Coverage**:
+- Aggregations: COUNT, SUM, AVG, MIN, MAX
+- Comparisons: =, !=, >, <, >=, <=, LIKE, IN, BETWEEN
+- Logic: AND, OR, NOT
+- Grouping: GROUP BY, HAVING, ORDER BY
+- Set Operations: UNION, INTERSECT, EXCEPT
+- Subqueries: Single and nested
 
 ### Step 4: Quality Analysis
 **Script**: `scripts/phase1_manual/03_analyze_quality.py`
