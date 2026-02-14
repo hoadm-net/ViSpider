@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 """
-Extract samples with similarity < 0.70 for manual review.
+Extract samples with similarity < 0.75 for manual review.
 """
 
 import json
@@ -13,7 +13,7 @@ SCRIPT_DIR = Path(__file__).resolve().parent
 PROJECT_ROOT = SCRIPT_DIR.parent.parent
 
 print("\n" + "="*80)
-print("EXTRACTING LOW-QUALITY SAMPLES (< 0.70)")
+print("EXTRACTING LOW-QUALITY SAMPLES (< 0.75)")
 print("="*80 + "\n")
 
 # Load data
@@ -28,16 +28,16 @@ with open(PROJECT_ROOT / 'results/quality_analysis/similarity_analysis.json', 'r
 similarities = analysis['all_similarities']
 print(f"✓ Loaded {len(data)} samples with similarity scores\n")
 
-# Filter samples with similarity < 0.70
+# Filter samples with similarity < 0.75
 low_quality = []
 for i, (sample, sim) in enumerate(zip(data, similarities)):
-    if sim < 0.70:
+    if sim < 0.75:
         sample_with_sim = sample.copy()
         sample_with_sim['labse_similarity'] = round(sim, 4)
         sample_with_sim['index'] = i
         low_quality.append(sample_with_sim)
 
-print(f"Found {len(low_quality)} samples with similarity < 0.70\n")
+print(f"Found {len(low_quality)} samples with similarity < 0.75\n")
 
 # Sort by similarity (lowest first)
 low_quality.sort(key=lambda x: x['labse_similarity'])
@@ -58,12 +58,12 @@ print()
 # By severity
 severe = [s for s in low_quality if s['labse_similarity'] < 0.50]
 moderate = [s for s in low_quality if 0.50 <= s['labse_similarity'] < 0.60]
-mild = [s for s in low_quality if 0.60 <= s['labse_similarity'] < 0.70]
+mild = [s for s in low_quality if 0.60 <= s['labse_similarity'] < 0.75]
 
 print("By severity:")
 print(f"  Severe    (< 0.50):     {len(severe):3d} ({len(severe)/len(low_quality)*100:5.1f}%)")
 print(f"  Moderate  (0.50-0.60):  {len(moderate):3d} ({len(moderate)/len(low_quality)*100:5.1f}%)")
-print(f"  Mild      (0.60-0.70):  {len(mild):3d} ({len(mild)/len(low_quality)*100:5.1f}%)")
+print(f"  Mild      (0.60-0.75):  {len(mild):3d} ({len(mild)/len(low_quality)*100:5.1f}%)")
 print()
 
 # By difficulty
@@ -96,7 +96,7 @@ summary = {
     "by_severity": {
         "severe_lt_0.50": len(severe),
         "moderate_0.50_0.60": len(moderate),
-        "mild_0.60_0.70": len(mild)
+        "mild_0.60_0.75": len(mild)
     },
     "by_difficulty": dict(diff_count),
     "samples": low_quality
