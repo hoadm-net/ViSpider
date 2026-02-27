@@ -1,0 +1,55 @@
+{
+  "config": {
+    "train_ratio": 0.8,
+    "dev_ratio": 0.1,
+    "test_ratio": 0.1,
+    "random_seed": 42
+  },
+  "splits": [
+    {
+      "split": "train",
+      "total": 1634,
+      "by_source": {
+        "gpt": 36,
+        "manual": 1598
+      },
+      "by_hardness": {
+        "easy": 431,
+        "extra_hard": 251,
+        "hard": 356,
+        "medium": 560,
+        "unknown": 36
+      }
+    },
+    {
+      "split": "dev",
+      "total": 203,
+      "by_source": {
+        "gpt": 4,
+        "manual": 199
+      },
+      "by_hardness": {
+        "easy": 54,
+        "extra_hard": 31,
+        "hard": 44,
+        "medium": 70,
+        "unknown": 4
+      }
+    },
+    {
+      "split": "test",
+      "total": 203,
+      "by_source": {
+        "gpt": 4,
+        "manual": 199
+      },
+      "by_hardness": {
+        "easy": 54,
+        "extra_hard": 31,
+        "hard": 44,
+        "medium": 70,
+        "unknown": 4
+      }
+    }
+  ]
+}
