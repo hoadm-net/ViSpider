@@ -32,14 +32,14 @@ Each translation goes through up to 2 attempts automatically:
 ## Workflow Steps
 
 ### Step 1: Sample Selection
-**Script**: `scripts/phase2_chatgpt/01_select_samples_for_gpt.py`
+**Script**: `scripts/phase3_chatgpt/01_select_samples_for_gpt.py`
 
 **Purpose**: Select samples for GPT translation using stratified sampling by SQL pattern distribution, excluding samples already covered by manual translations.
 
 **Output**: `data/chatgpt_translations/gpt_target_samples.json`
 
 ### Step 2: Translation with Validation
-**Script**: `scripts/phase2_chatgpt/02_translate_with_validation.py`
+**Script**: `scripts/phase3_chatgpt/02_translate_with_validation.py`
 
 **Purpose**: Translate samples with GPT and validate quality in real time.
 
@@ -135,10 +135,10 @@ cd ViSpider
 source venv/bin/activate
 
 # Step 1: Select samples
-python3 scripts/phase2_chatgpt/01_select_samples_for_gpt.py
+python3 scripts/phase3_chatgpt/01_select_samples_for_gpt.py
 
 # Step 2: Translate with validation (auto-resumes from checkpoint if interrupted)
-python3 scripts/phase2_chatgpt/02_translate_with_validation.py
+python3 scripts/phase3_chatgpt/02_translate_with_validation.py
 ```
 
 ### Resume from Checkpoint

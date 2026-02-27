@@ -7,7 +7,7 @@ Phase 3 merges the gold seed and GPT-translated data into a unified dataset, fin
 ## Workflow Steps
 
 ### Step 1: Merge & Split Dataset
-**Script**: `scripts/phase3_finetune/01_merge_and_split.py`
+**Script**: `scripts/phase4_finetune/01_merge_and_split.py`
 
 **Purpose**: Merge Phase 1 (manual) and Phase 2 (GPT) translations into a single dataset, then split into train/dev/test with stratified sampling by source and difficulty level. In case of duplicate IDs, the manual translation takes priority.
 
@@ -24,13 +24,13 @@ Phase 3 merges the gold seed and GPT-translated data into a unified dataset, fin
 
 **Run**:
 ```bash
-python3 scripts/phase3_finetune/01_merge_and_split.py
+python3 scripts/phase4_finetune/01_merge_and_split.py
 ```
 
 ---
 
 ### Step 2: Fine-tune Translation Model
-**Script**: `scripts/phase3_finetune/02_finetune.py`
+**Script**: `scripts/phase4_finetune/02_finetune.py`
 
 **Purpose**: Fine-tune Qwen2.5-7B-Instruct with QLoRA for the task `(EN question + SQL query + db_id) → VI question`. Uses 4-bit quantization (QLoRA) by default to fit within GPU memory constraints.
 
@@ -43,19 +43,19 @@ python3 scripts/phase3_finetune/01_merge_and_split.py
 **Run**:
 ```bash
 # QLoRA 4-bit (default, recommended)
-python3 scripts/phase3_finetune/02_finetune.py
+python3 scripts/phase4_finetune/02_finetune.py
 
 # Full precision (higher VRAM requirement)
-python3 scripts/phase3_finetune/02_finetune.py --no-quantize
+python3 scripts/phase4_finetune/02_finetune.py --no-quantize
 
 # Custom hyperparameters
-python3 scripts/phase3_finetune/02_finetune.py --epochs 3 --lr 2e-4 --batch-size 4
+python3 scripts/phase4_finetune/02_finetune.py --epochs 3 --lr 2e-4 --batch-size 4
 
 # Resume from checkpoint
-python3 scripts/phase3_finetune/02_finetune.py --resume
+python3 scripts/phase4_finetune/02_finetune.py --resume
 
 # Smoke test (limited steps)
-python3 scripts/phase3_finetune/02_finetune.py --max-steps 10
+python3 scripts/phase4_finetune/02_finetune.py --max-steps 10
 ```
 
 **Requirements**: GPU with sufficient VRAM. Install extra dependencies first:
@@ -66,7 +66,7 @@ pip install peft trl bitsandbytes accelerate
 ---
 
 ### Step 3: Merge Adapter into Standalone Model
-**Script**: `scripts/phase3_finetune/03_merge_adapter.py`
+**Script**: `scripts/phase4_finetune/03_merge_adapter.py`
 
 **Purpose**: Merge the LoRA adapter weights into the base model to produce a standalone model that can be loaded without PEFT.
 
@@ -77,10 +77,10 @@ pip install peft trl bitsandbytes accelerate
 **Run**:
 ```bash
 # Default paths (reads adapter from models/qwen25_vispider/final/)
-python3 scripts/phase3_finetune/03_merge_adapter.py
+python3 scripts/phase4_finetune/03_merge_adapter.py
 
 # Custom paths
-python3 scripts/phase3_finetune/03_merge_adapter.py \
+python3 scripts/phase4_finetune/03_merge_adapter.py \
   --adapter models/qwen25_vispider/final \
   --output models/qwen25_vispider_merged
 ```
@@ -88,7 +88,7 @@ python3 scripts/phase3_finetune/03_merge_adapter.py \
 ---
 
 ### Step 4: Evaluate Translation Quality
-**Script**: `scripts/phase3_finetune/04_evaluate.py`
+**Script**: `scripts/phase4_finetune/04_evaluate.py`
 
 **Purpose**: Run inference on the dev or test split and compute LaBSE similarity scores between model outputs and reference Vietnamese translations.
 
@@ -101,16 +101,16 @@ python3 scripts/phase3_finetune/03_merge_adapter.py \
 **Run**:
 ```bash
 # Evaluate on dev set (default, uses adapter)
-python3 scripts/phase3_finetune/04_evaluate.py
+python3 scripts/phase4_finetune/04_evaluate.py
 
 # Evaluate on test set
-python3 scripts/phase3_finetune/04_evaluate.py --split test
+python3 scripts/phase4_finetune/04_evaluate.py --split test
 
 # Use merged standalone model
-python3 scripts/phase3_finetune/04_evaluate.py --model models/qwen25_vispider_merged
+python3 scripts/phase4_finetune/04_evaluate.py --model models/qwen25_vispider_merged
 
 # Quick smoke-test on first N samples
-python3 scripts/phase3_finetune/04_evaluate.py --n 50
+python3 scripts/phase4_finetune/04_evaluate.py --n 50
 ```
 
 ---
@@ -121,10 +121,10 @@ python3 scripts/phase3_finetune/04_evaluate.py --n 50
 cd ViSpider
 source venv/bin/activate
 
-python3 scripts/phase3_finetune/01_merge_and_split.py
-python3 scripts/phase3_finetune/02_finetune.py
-python3 scripts/phase3_finetune/03_merge_adapter.py
-python3 scripts/phase3_finetune/04_evaluate.py --split dev
+python3 scripts/phase4_finetune/01_merge_and_split.py
+python3 scripts/phase4_finetune/02_finetune.py
+python3 scripts/phase4_finetune/03_merge_adapter.py
+python3 scripts/phase4_finetune/04_evaluate.py --split dev
 ```
 
 ## Dataset Format

@@ -375,7 +375,7 @@ def main():
     target_file = PROJECT_ROOT / 'data/chatgpt_translations/gpt_target_samples.json'
     if not target_file.exists():
         print(f"❌ ERROR: Target file not found: {target_file}")
-        print("Please run first: python3 scripts/phase2_chatgpt/01_select_samples_for_gpt.py")
+        print("Please run first: python3 scripts/phase3_chatgpt/01_select_samples_for_gpt.py")
         return
 
     print(f"Loading target samples from: {target_file}")

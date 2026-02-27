@@ -11,54 +11,63 @@ Translate the entire Spider dataset from English to Vietnamese while maintaining
 
 ## Methodology Overview
 
-### Step 1: Gold Seed Construction
+### Step 1: Data Preparation
+
+Extract and simplify the raw Spider dataset into a clean format for downstream translation phases.
+
+**Script**: `scripts/phase1_prepare/01_extract_spider_data.py`  
+**Output**: `data/extracted/` — simplified train/dev/test JSON files
+
+### Step 2: Gold Seed Construction
+
+### Step 2: Gold Seed Construction
 
 Manually translate a representative subset of Spider questions into Vietnamese via Label Studio. Translations are validated using LaBSE semantic similarity and rule-based SQL operator checks. Low-quality samples are flagged for review and re-translation.
 
-**Scripts**: `scripts/phase1_manual/`  
+**Scripts**: `scripts/phase2_manual/`  
 **Output**: `data/manual_translations/vispider_train_2000.json`
 
-### Step 2: GPT Expansion ✅
+### Step 3: GPT Expansion ✅
 **Status**: Complete
 
 Expand the dataset using GPT with few-shot prompting. Diverse examples with the same SQL pattern are selected from the gold seed as few-shot context. Each translation is validated in real time against LaBSE similarity and SQL operator consistency; failed samples are automatically retried with a different prompt. Progress is saved to checkpoints and automatically resumed on restart.
 
-**Scripts**: `scripts/phase2_chatgpt/`  
+**Scripts**: `scripts/phase3_chatgpt/`  
 **Output**: `data/chatgpt_translations/gpt_translations_final.json`
 
-### Step 3: Dataset Assembly ✅
+### Step 4: Dataset Assembly ✅
 **Status**: Complete
 
 Merge gold seed and GPT-translated data, deduplicate by sample ID (gold seed takes priority), then split into train/dev/test sets with stratified sampling by source and difficulty level.
 
-**Script**: `scripts/phase3_finetune/01_merge_and_split.py`  
+**Script**: `scripts/phase4_finetune/01_merge_and_split.py`  
 **Output**: `data/merged/` — unified train/dev/test split
 
-### Step 4: Fine-tune Translation Model ✅
+### Step 5: Fine-tune Translation Model ✅
 **Status**: Complete
 
 Fine-tune Qwen2.5-7B-Instruct with QLoRA on the merged dataset for the task `(EN question + SQL + db_id) → VI question`. After training, merge the LoRA adapter into a standalone model.
 
-**Scripts**: `scripts/phase3_finetune/02_finetune.py`, `03_merge_adapter.py`  
+**Scripts**: `scripts/phase4_finetune/02_finetune.py`, `03_merge_adapter.py`  
 **Output**: `models/qwen25_vispider_merged/`
 
-### Step 5: Pre-Scaling Evaluation 🔄
+### Step 6: Pre-Scaling Evaluation 🔄
 **Status**: Planned
 
 Evaluate the fine-tuned model on the held-out dev and test sets using LaBSE similarity. This acts as a quality gate before full-scale translation.
 
-**Script**: `scripts/phase3_finetune/04_evaluate.py`  
+**Script**: `scripts/phase4_finetune/04_evaluate.py`  
 **Output**: `results/quality_analysis/`
 
-### Step 6: Full Dataset Translation (Hybrid Scaling) 🔄
+### Step 7: Full Dataset Translation (Hybrid Scaling) 🔄
 **Status**: Planned
 
 Translate the remaining Spider samples using the fine-tuned model. Outputs that do not meet the quality threshold are automatically re-routed to GPT as a fallback.
 
-**Scripts**: `scripts/phase3_finetune/` *(in development)*  
+**Scripts**: `scripts/phase4_finetune/` *(in development)*  
 **Output**: `data/model_translations/`
 
-### Step 7: Final Quality Control 🔄
+### Step 8: Final Quality Control 🔄
 **Status**: Planned
 
 Validate the complete dataset: LaBSE similarity distribution, difficulty-level balance, and spot checks. Generate the final quality report.
@@ -72,16 +81,16 @@ ViSpider/
 ├── data/
 │   ├── raw/                      # Original Spider dataset
 │   ├── extracted/                # Simplified extraction of raw data
-│   ├── manual_translations/      # Step 1: Gold seed (human)
-│   ├── chatgpt_translations/     # Step 2: GPT expansion
-│   ├── merged/                   # Step 3: Train/dev/test split
-│   └── model_translations/       # Step 6: Hybrid scaling output
+   ├── manual_translations/      # Step 2: Gold seed (human)
+   ├── chatgpt_translations/     # Step 3: GPT expansion
+   ├── merged/                   # Step 4: Train/dev/test split
+   └── model_translations/       # Step 7: Hybrid scaling output
 │
 ├── scripts/
-│   ├── phase0_prepare/           # Step 0: Data extraction
-│   ├── phase1_manual/            # Step 1: Manual translation pipeline
-│   ├── phase2_chatgpt/           # Step 2: GPT translation
-│   ├── phase3_finetune/          # Steps 3–7: Assembly, training & scaling
+│   ├── phase1_prepare/           # Step 1: Data extraction
+│   ├── phase2_manual/            # Step 2: Manual translation pipeline
+│   ├── phase3_chatgpt/           # Step 3: GPT translation
+│   ├── phase4_finetune/          # Steps 4–8: Assembly, training & scaling
 │   └── utils/                    # Shared utilities (LaBSE, embeddings)
 │
 ├── models/                       # Trained model weights (gitignored)
@@ -93,13 +102,14 @@ ViSpider/
 ## Data Pipeline Flow
 
 ```
-Step 1: Manual → Gold Seed
-Step 2: GPT + Few-shot → Synthetic Data
-Step 3: Gold + Synthetic → Training Dataset
-Step 4: Train → Translation Model
-Step 5: Evaluate → [GATE: Quality Check]
-Step 6: Model + GPT Fallback → Full Dataset
-Step 7: QC → Final ViSpider
+Step 1: Extract raw Spider data
+Step 2: Manual → Gold Seed
+Step 3: GPT + Few-shot → Synthetic Data
+Step 4: Gold + Synthetic → Training Dataset
+Step 5: Train → Translation Model
+Step 6: Evaluate → [GATE: Quality Check]
+Step 7: Model + GPT Fallback → Full Dataset
+Step 8: QC → Final ViSpider
 ```
 
 ## Quick Start
@@ -122,8 +132,11 @@ pip install -r requirements.txt
 ### Step 1: Manual Translation Pipeline
 
 ```bash
-# Phase 1: Parse and process manual translations
-cd scripts/phase1_manual
+# Phase 1: Extract Spider data
+python3 scripts/phase1_prepare/01_extract_spider_data.py
+
+# Phase 2: Parse and process manual translations
+cd scripts/phase2_manual
 python3 01_parse_label_studio.py
 python3 02_compute_embeddings.py
 python3 02b_extract_sql_patterns.py
@@ -132,13 +145,13 @@ python3 04_extract_low_quality.py
 python3 05_filter_by_quality.py
 python3 06_review_samples.py
 
-# Phase 2: GPT expansion
-cd ../phase2_chatgpt
+# Phase 3: GPT expansion
+cd ../phase3_chatgpt
 python3 01_select_samples_for_gpt.py
 python3 02_translate_with_validation.py
 
-# Phase 3: Fine-tune and evaluate
-cd ../phase3_finetune
+# Phase 4: Fine-tune and evaluate
+cd ../phase4_finetune
 python3 01_merge_and_split.py
 python3 02_finetune.py
 python3 03_merge_adapter.py
@@ -148,9 +161,10 @@ python3 04_evaluate.py
 ## Documentation
 
 - [Quick Reference](docs/QUICK_REFERENCE.md) - All commands and troubleshooting
-- [Phase 1 Manual Translation](docs/PHASE1_MANUAL.md) - Manual translation workflow
-- [Phase 2 GPT Expansion](docs/PHASE2_CHATGPT.md) - GPT translation workflow
-- [Phase 3 Fine-tuning](docs/PHASE3_FINETUNE.md) - Model training and evaluation
+- [Phase 1 Data Preparation](docs/PHASE1_PREPARE.md) - Spider data extraction
+- [Phase 2 Manual Translation](docs/PHASE2_MANUAL.md) - Manual translation workflow
+- [Phase 3 GPT Expansion](docs/PHASE3_CHATGPT.md) - GPT translation workflow
+- [Phase 4 Fine-tuning](docs/PHASE4_FINETUNE.md) - Model training and evaluation
 - [LaBSE Embeddings](docs/LABSE_EMBEDDINGS.md) - Quality assessment methodology
 - [Spider Dataset Overview](docs/SPIDER_OVERVIEW.md) - Original dataset details
 

@@ -1,8 +1,8 @@
-# Phase 1: Manual Translation Workflow
+# Phase 2: Manual Translation Workflow
 
 ## Overview
 
-Phase 1 focuses on manually translating a representative subset of the Spider dataset into Vietnamese. This creates the gold seed for subsequent automated translation phases.
+Phase 2 focuses on manually translating a representative subset of the Spider dataset into Vietnamese. This creates the gold seed for subsequent automated translation phases.
 
 ## Workflow Steps
 
@@ -24,7 +24,7 @@ Phase 1 focuses on manually translating a representative subset of the Spider da
 - Maintain query intent
 
 ### Step 2: Parse Label Studio Export
-**Script**: `scripts/phase1_manual/01_parse_label_studio.py`
+**Script**: `scripts/phase2_manual/01_parse_label_studio.py`
 
 **Purpose**: Convert Label Studio JSON format to standard ViSpider format
 
@@ -43,17 +43,17 @@ Phase 1 focuses on manually translating a representative subset of the Spider da
 ```
 
 ### Step 3: Compute Embeddings
-**Script**: `scripts/phase1_manual/02_compute_embeddings.py`
+**Script**: `scripts/phase2_manual/02_compute_embeddings.py`
 
 **Purpose**: Generate LaBSE embeddings for English and Vietnamese question pairs and compute cosine similarity for each.
 
 ### Step 3b: Extract SQL Patterns (Rule-Based Validation)
-**Script**: `scripts/phase1_manual/02b_extract_sql_patterns.py`
+**Script**: `scripts/phase2_manual/02b_extract_sql_patterns.py`
 
 **Purpose**: Extract SQL operators and patterns from queries for rule-based validation. Categorizes query complexity and validates SQL structure preservation.
 
 ### Step 4: Quality Analysis
-**Script**: `scripts/phase1_manual/03_analyze_quality.py`
+**Script**: `scripts/phase2_manual/03_analyze_quality.py`
 
 **Purpose**: Analyze translation quality distribution
 
@@ -64,12 +64,12 @@ Phase 1 focuses on manually translating a representative subset of the Spider da
 - Visualization plots
 
 ### Step 5: Extract Low-Quality Samples
-**Script**: `scripts/phase1_manual/04_extract_low_quality.py`
+**Script**: `scripts/phase2_manual/04_extract_low_quality.py`
 
 **Purpose**: Identify samples below the quality threshold that need manual review.
 
 ### Step 6: Manual Review & Re-translation
-**Script**: `scripts/phase1_manual/06_review_samples.py`
+**Script**: `scripts/phase2_manual/06_review_samples.py`
 
 **Purpose**: Display problematic samples for manual correction
 
@@ -80,7 +80,7 @@ Phase 1 focuses on manually translating a representative subset of the Spider da
 4. Verify improved quality scores
 
 ### Step 7: Filter High-Quality Dataset
-**Script**: `scripts/phase1_manual/05_filter_by_quality.py`
+**Script**: `scripts/phase2_manual/05_filter_by_quality.py`
 
 **Purpose**: Create filtered dataset with only high-quality translations
 
@@ -101,7 +101,7 @@ Phase 1 focuses on manually translating a representative subset of the Spider da
 ## Running the Pipeline
 
 ```bash
-cd scripts/phase1_manual
+cd scripts/phase2_manual
 
 # 1. Parse Label Studio export
 python3 01_parse_label_studio.py

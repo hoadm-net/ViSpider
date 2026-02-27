@@ -53,7 +53,7 @@ def load_extracted_data(manual_ids: Set[str]) -> List[Dict]:
         
         if not raw_spider.exists():
             print(f"❌ ERROR: Neither extracted nor raw data found!")
-            print(f"Please run: python3 scripts/phase0_prepare/00_extract_spider_data.py")
+            print(f"Please run: python3 scripts/phase1_prepare/01_extract_spider_data.py")
             print(f"Or ensure Git LFS data is pulled: git lfs pull")
             raise FileNotFoundError("No Spider data available")
         
@@ -306,7 +306,7 @@ def main():
     print()
     
     print("Next step:")
-    print("  python3 scripts/phase2_chatgpt/02_translate_with_validation.py")
+    print("  python3 scripts/phase3_chatgpt/02_translate_with_validation.py")
 
 
 if __name__ == "__main__":
