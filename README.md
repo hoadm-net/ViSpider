@@ -23,37 +23,37 @@ Build high-quality seed dataset through manual translation:
 **Output**: Gold standard human-translated dataset
 
 ### Step 2: GPT Expansion ✅
-**Status**: Implementation Complete
+**Status**: Complete
 
 Expand dataset using GPT with few-shot prompting:
 - Intra-class diversity: 3 diverse examples with same SQL pattern
 - Real-time validation: LaBSE ≥ 0.75 + operator keywords
-- Retry logic: Different examples if validation fails (max 3 attempts)
+- Tiered retry: 3 examples on first attempt, 5 new examples + hint on second
 - Checkpoint every 100 samples for recovery
-- Target: 3,000 samples with pattern coverage
 
-**Output**: GPT-translated dataset with validation (~3,000 samples)
+**Output**: GPT-translated dataset with validation
 
-### Step 3: Dataset Assembly 🔄
-**Status**: Planned
+### Step 3: Dataset Assembly ✅
+**Status**: Complete
 
 Merge human and synthetic data:
-- Combine gold seed + GPT expansion
-- Balance difficulty distribution across train/dev splits
-- Reserve validation set for model evaluation
+- Combine gold seed + GPT expansion (deduplication by ID, Phase 1 priority)
+- Stratified split by source × hardness — 80/10/10 (train/dev/test)
+- Canonical format: `{id, db_id, question, vi_question, query, hardness, sql_patterns, source}`
 
-**Output**: Unified training dataset with validation split
+**Output**: `data/merged/` — unified train/dev/test split
 
 ### Step 4: Fine-tune Translation Model 🔄
-**Status**: Planned
+**Status**: In Progress
 
 Train specialized translation model:
-- Architecture: 3-7B parameter model with LoRA/QLoRA
-- Task format: `(EN question, SQL) → VI question`
-- Training: Early stopping on validation loss
-- Optimization: Efficient fine-tuning for resource constraints
+- Architecture: Qwen2.5-7B-Instruct with QLoRA (4-bit nf4, LoRA r=16)
+- Task format: `(EN question + SQL + db_id) → VI question`
+- Prompt format: Qwen2.5 ChatML (`<|im_start|>system/user/assistant<|im_end|>`)
+- Optimizer: `paged_adamw_8bit`, 3 epochs, cosine LR scheduler
+- Scripts: `scripts/phase3_finetune/02_finetune.py`, `03_merge_adapter.py`
 
-**Output**: Vietnamese question translation model
+**Output**: Fine-tuned Qwen2.5 adapter + merged standalone model
 
 ### Step 5: Pre-Scaling Evaluation 🔄
 **Status**: Planned
@@ -96,16 +96,17 @@ ViSpider/
 │   ├── raw/                      # Original Spider dataset
 │   ├── manual_translations/      # Step 1: Gold seed (human)
 │   ├── chatgpt_translations/     # Step 2: GPT expansion
-│   ├── merged_train/             # Step 3: Assembly
+│   ├── merged/                   # Step 3: Assembly (train/dev/test split)
 │   └── model_translations/       # Step 6: Hybrid scaling output
 │
 ├── scripts/
 │   ├── phase0_prepare/           # Step 0: Data extraction
 │   ├── phase1_manual/            # Step 1: Manual translation pipeline
 │   ├── phase2_chatgpt/           # Step 2: GPT translation
-│   ├── phase3_finetune/          # Steps 4-7: Model training & scaling
+│   ├── phase3_finetune/          # Steps 3-7: Dataset assembly, model training & scaling
 │   └── utils/                    # Shared utilities
 │
+├── models/                       # Trained model weights (gitignored)
 ├── results/                      # Analysis outputs (gitignored)
 ├── experiments/                  # Experimental code (gitignored)
 └── docs/                         # Documentation

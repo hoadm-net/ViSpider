@@ -8,22 +8,19 @@ ViSpider/
 │   ├── raw/                          # Original Spider dataset
 │   ├── manual_translations/          # Phase 1: Manual translations
 │   ├── chatgpt_translations/         # Phase 2: GPT translations
-│   └── model_translations/           # Phase 3: Fine-tuned model (planned)
+│   ├── merged/                       # Phase 3.1: Train/dev/test split
+│   └── model_translations/           # Phase 3+: Fine-tuned model output
 │
 ├── scripts/
 │   ├── phase0_prepare/               # Phase 0: Data extraction
 │   ├── phase1_manual/                # Phase 1: Manual translation pipeline
 │   ├── phase2_chatgpt/               # Phase 2: GPT translation
-│   ├── phase3_finetune/              # Phase 3: Model training (planned)
+│   ├── phase3_finetune/              # Phase 3: Dataset assembly & model training
 │   └── utils/                        # Shared utilities
 │
+├── models/                           # Trained model weights (gitignored)
 ├── results/                          # Analysis outputs (gitignored)
-│   ├── embeddings/
-│   ├── quality_analysis/
-│   └── comparisons/
-│
 ├── experiments/                      # Experimental code (gitignored)
-│
 └── docs/                             # Documentation
 ```
 
@@ -71,6 +68,25 @@ python3 scripts/phase2_chatgpt/01_select_samples_for_gpt.py -n 3000
 
 # Step 2: Translate with validation (auto-loads gpt_target_samples.json)
 python3 scripts/phase2_chatgpt/02_translate_with_validation.py
+```
+
+### Run Phase 3 Pipeline
+```bash
+cd /home/hoadm/ViSpider
+source venv/bin/activate
+pip install peft trl bitsandbytes accelerate  # first time only
+
+# Step 1: Merge & split (already done — data/merged/ exists)
+python3 scripts/phase3_finetune/01_merge_and_split.py
+
+# Step 2: Fine-tune (requires GPU with ≥16 GB VRAM)
+python3 scripts/phase3_finetune/02_finetune.py
+
+# Step 3: Merge adapter into standalone model
+python3 scripts/phase3_finetune/03_merge_adapter.py
+
+# Step 4: Evaluate on dev/test set
+python3 scripts/phase3_finetune/04_evaluate.py --split dev
 ```
 
 ### Run Full Phase 1 Pipeline
@@ -122,6 +138,16 @@ python3 06_review_samples.py --difficulty hard
 - `gpt_translations_checkpoint_*.json` - Progress checkpoints
 - `results/quality_analysis/gpt_validation_report.json` - Quality metrics
 - `results/quality_analysis/gpt_failed_samples.json` - Failed samples
+
+### Phase 3 Output Files
+- `data/merged/vispider_all.json` - All merged samples
+- `data/merged/vispider_train.json` - Training split (80%)
+- `data/merged/vispider_dev.json` - Dev split (10%)
+- `data/merged/vispider_test.json` - Test split (10%)
+- `data/merged/split_report.json` - Split statistics by source and hardness
+- `models/qwen25_vispider/final/` - Trained LoRA adapter (after fine-tuning)
+- `models/qwen25_vispider_merged/` - Merged standalone model (after 03_merge_adapter.py)
+- `results/quality_analysis/model_eval_dev.json` - Dev set evaluation results
 
 ## Quality Interpretation
 
@@ -177,8 +203,12 @@ python3 02_compute_embeddings.py
 
 ## Next Steps
 
-After Phase 1:
-1. **Phase 2**: Use ChatGPT to translate 3,000 more samples
-2. **Phase 3**: Fine-tune 3-7B parameter model for remaining translations
-3. **Validation**: Run quality analysis on all phases
-4. **Publication**: Release complete ViSpider dataset
+Phase 3 (current):
+1. Run `02_finetune.py` on GPU server
+2. Merge adapter with `03_merge_adapter.py`
+3. Evaluate with `04_evaluate.py --split dev`
+
+Phase 4+:
+4. **Pre-scaling gate**: Compare model vs GPT baseline — proceed only if quality threshold met
+5. **Full dataset translation**: Fine-tuned model translates remaining Spider samples with GPT fallback
+6. **Final QC**: LaBSE distribution, difficulty balance, dataset release
