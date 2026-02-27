@@ -3,9 +3,13 @@
 Translate samples using GPT with diverse few-shot prompting and real-time validation.
 
 Features:
-1. Intra-class diversity: Select 3 diverse examples with same SQL pattern
-2. Real-time validation: LaBSE similarity + operator validation
-3. Retry logic: Try different examples if validation fails
+1. Intra-class diversity: Select N diverse examples with same SQL pattern
+2. Real-time validation:
+   - LaBSE similarity >= 0.75 (0.70 for short questions <= 7 words)
+   - Operator validation: COUNT only checked when question explicitly asks "how many"
+3. Automatic retry (2 attempts total):
+   - Attempt 1: 3 examples, standard prompt
+   - Attempt 2: 5 completely new examples (exclude attempt 1) + literal-translation hint
 4. Checkpoint: Save progress every 100 samples
 5. Rate limiting: Respect OpenAI API limits
 """
@@ -91,19 +95,41 @@ def cosine_distance(emb1: np.ndarray, emb2: np.ndarray) -> float:
     return 1.0 - np.dot(emb1, emb2) / (np.linalg.norm(emb1) * np.linalg.norm(emb2))
 
 
+# Retry strategies: (n_examples, extra_instruction)
+# Attempt 1: 3 examples, standard prompt
+# Attempt 2: 5 completely different examples + hint to be more literal
+RETRY_STRATEGIES = [
+    (
+        3,
+        None
+    ),
+    (
+        5,
+        "IMPORTANT: Your previous translation scored low on semantic similarity. "
+        "Translate more literally and directly. "
+        "If the SQL contains COUNT/MAX/MIN/AVG/SUM or comparisons (>, <), "
+        "make sure the Vietnamese includes: "
+        "COUNT \u2192 'bao nhi\u00eau' or 's\u1ed1 l\u01b0\u1ee3ng'; "
+        "MAX \u2192 'l\u1edbn nh\u1ea5t'; MIN \u2192 'nh\u1ecf nh\u1ea5t'; "
+        "AVG \u2192 'trung b\u00ecnh'; SUM \u2192 't\u1ed5ng'; "
+        "greater-than \u2192 'l\u1edbn h\u01a1n'; less-than \u2192 'nh\u1ecf h\u01a1n'."
+    ),
+]
+
+
 def select_diverse_fewshot(
     target_sample: Dict,
     pattern_index: Dict[str, List[Dict]],
     embeddings_dict: Dict[str, np.ndarray],
-    exclude_ids: Set[str] = None
+    exclude_ids: Set[str] = None,
+    n_examples: int = 3
 ) -> List[Dict]:
     """
-    Select 3 diverse few-shot examples with same primary pattern.
+    Select n_examples diverse few-shot examples with same primary pattern.
     
-    Optimization: Greedy selection for max diversity
+    Greedy selection for max diversity:
     - First: random from pattern pool
-    - Second: max distance from first
-    - Third: max min-distance from {first, second}
+    - Each subsequent: max min-distance from already-selected set
     """
     if exclude_ids is None:
         exclude_ids = set()
@@ -114,7 +140,6 @@ def select_diverse_fewshot(
     
     # Get candidate pool
     if primary_pattern not in pattern_index:
-        # Fallback to any pattern with samples
         primary_pattern = list(pattern_index.keys())[0]
     
     candidates = [
@@ -122,15 +147,15 @@ def select_diverse_fewshot(
         if s['id'] not in exclude_ids and s['id'] in embeddings_dict
     ]
     
-    if len(candidates) < 3:
-        # Not enough candidates, use all available patterns
+    if len(candidates) < n_examples:
+        # Not enough same-pattern candidates, expand to all patterns
         candidates = [
             s for samples in pattern_index.values()
             for s in samples
             if s['id'] not in exclude_ids and s['id'] in embeddings_dict
         ]
     
-    if len(candidates) < 3:
+    if len(candidates) < n_examples:
         raise ValueError(f"Not enough candidates for few-shot selection (only {len(candidates)} available)")
     
     # Greedy diverse selection
@@ -139,33 +164,24 @@ def select_diverse_fewshot(
     # First: random
     first = np.random.choice(candidates)
     selected.append(first)
-    candidates = [c for c in candidates if c['id'] != first['id']]
+    remaining = [c for c in candidates if c['id'] != first['id']]
     
-    # Second: max distance from first
-    first_emb = embeddings_dict[first['id']]
-    distances = [cosine_distance(first_emb, embeddings_dict[c['id']]) for c in candidates]
-    second_idx = np.argmax(distances)
-    second = candidates[second_idx]
-    selected.append(second)
-    candidates = [c for c in candidates if c['id'] != second['id']]
-    
-    # Third: max min-distance from {first, second}
-    second_emb = embeddings_dict[second['id']]
-    min_distances = []
-    for c in candidates:
-        c_emb = embeddings_dict[c['id']]
-        d1 = cosine_distance(first_emb, c_emb)
-        d2 = cosine_distance(second_emb, c_emb)
-        min_distances.append(min(d1, d2))
-    
-    third_idx = np.argmax(min_distances)
-    third = candidates[third_idx]
-    selected.append(third)
+    # Each next: max min-distance from all already-selected
+    while len(selected) < n_examples and remaining:
+        selected_embs = [embeddings_dict[s['id']] for s in selected]
+        min_dists = []
+        for c in remaining:
+            c_emb = embeddings_dict[c['id']]
+            min_d = min(cosine_distance(se, c_emb) for se in selected_embs)
+            min_dists.append(min_d)
+        next_idx = np.argmax(min_dists)
+        selected.append(remaining[next_idx])
+        remaining = [c for c in remaining if c['id'] != remaining[next_idx]['id']]
     
     return selected
 
 
-def create_translation_prompt(target: Dict, fewshot_examples: List[Dict]) -> str:
+def create_translation_prompt(target: Dict, fewshot_examples: List[Dict], extra_instruction: str = None) -> str:
     """Create GPT prompt with few-shot examples using template file."""
     
     # Load prompt template
@@ -188,6 +204,13 @@ def create_translation_prompt(target: Dict, fewshot_examples: List[Dict]) -> str
         english_question=target['question'],
         sql_query=target['query']
     )
+    
+    # Inject extra instruction before "NOW TRANSLATE:" if provided
+    if extra_instruction:
+        prompt = prompt.replace(
+            "NOW TRANSLATE:",
+            f"⚠️ {extra_instruction}\n\nNOW TRANSLATE:"
+        )
     
     return prompt
 
@@ -251,17 +274,27 @@ def validate_translation(
     
     # Operator validation (simplified keywords check)
     vi_lower = vietnamese_translation.lower()
+    en_lower = english_question.lower()
     
     missing_operators = []
+    
+    # COUNT: only require explicit count keywords when the question is clearly
+    # asking "how many". If the question asks "which/what X is most common",
+    # COUNT is implicit in SQL but doesn't need to appear in Vietnamese.
+    count_question_words = ['how many', 'how much', 'count', 'number of', 'total number']
+    count_is_explicit = any(w in en_lower for w in count_question_words)
+    
     critical_mappings = {
-        'COUNT': ['bao nhiêu', 'mấy', 'số lượng', 'đếm'],
-        'MAX': ['lớn nhất', 'cao nhất', 'nhiều nhất', 'tối đa'],
-        'MIN': ['nhỏ nhất', 'thấp nhất', 'ít nhất', 'tối thiểu'],
-        'AVG': ['trung bình', 'bình quân'],
-        'SUM': ['tổng', 'tổng cộng'],
-        'GREATER_THAN': ['lớn hơn', 'cao hơn', 'nhiều hơn', 'trên'],
-        'LESS_THAN': ['nhỏ hơn', 'thấp hơn', 'ít hơn', 'dưới'],
+        'MAX': ['l\u1edbn nh\u1ea5t', 'cao nh\u1ea5t', 'nhi\u1ec1u nh\u1ea5t', 't\u1ed1i \u0111a'],
+        'MIN': ['nh\u1ecf nh\u1ea5t', 'th\u1ea5p nh\u1ea5t', '\u00edt nh\u1ea5t', 't\u1ed1i thi\u1ec3u'],
+        'AVG': ['trung b\u00ecnh', 'b\u00ecnh qu\u00e2n'],
+        'SUM': ['t\u1ed5ng', 't\u1ed5ng c\u1ed9ng'],
+        'GREATER_THAN': ['l\u1edbn h\u01a1n', 'cao h\u01a1n', 'nhi\u1ec1u h\u01a1n', 'tr\u00ean', 'v\u01b0\u1ee3t'],
+        'LESS_THAN': ['nh\u1ecf h\u01a1n', 'th\u1ea5p h\u01a1n', '\u00edt h\u01a1n', 'd\u01b0\u1edbi'],
     }
+    # Only add COUNT to mapping when question explicitly asks for a count
+    if count_is_explicit:
+        critical_mappings['COUNT'] = ['bao nhi\u00eau', 'm\u1ea5y', 's\u1ed1 l\u01b0\u1ee3ng', '\u0111\u1ebfm']
     
     for pattern in sql_patterns:
         if pattern in critical_mappings:
@@ -271,8 +304,13 @@ def validate_translation(
     
     operator_valid = len(missing_operators) == 0
     
+    # Dynamic LaBSE threshold: short questions are inherently harder for
+    # cross-lingual embeddings, so lower the bar slightly
+    en_word_count = len(english_question.split())
+    labse_threshold = 0.70 if en_word_count <= 7 else 0.75
+    
     # Overall validation
-    is_valid = labse_score >= 0.75 and operator_valid
+    is_valid = labse_score >= labse_threshold and operator_valid
     
     return is_valid, labse_score, {
         'is_valid': operator_valid,
@@ -300,39 +338,37 @@ def main():
     print("GPT TRANSLATION WITH VALIDATION")
     print("="*80)
     print()
-    
+
     # Check environment variables
     api_key = os.getenv('OPENAI_API_KEY')
     model = os.getenv('GPT_MODEL', 'gpt-4o-mini')
-    
+
     if not api_key:
         print("❌ ERROR: OPENAI_API_KEY not found in .env file")
         print("Please add your OpenAI API key to .env")
         return
-    
+
     print(f"Using model: {model}")
     print(f"API key: {api_key[:20]}...")
     print()
-    
+
     # Initialize OpenAI client
     client = OpenAI(api_key=api_key)
-    
-    # Load data
+
+    # Load gold seed + embeddings
     gold_samples, embeddings_dict = load_gold_seed_with_embeddings()
     pattern_index = build_pattern_index(gold_samples)
-    
+
     # Load target samples (output of script 01)
     target_file = PROJECT_ROOT / 'data/chatgpt_translations/gpt_target_samples.json'
-    
     if not target_file.exists():
         print(f"❌ ERROR: Target file not found: {target_file}")
         print("Please run first: python3 scripts/phase2_chatgpt/01_select_samples_for_gpt.py")
         return
-    
+
     print(f"Loading target samples from: {target_file}")
     with open(target_file, 'r', encoding='utf-8') as f:
         target_samples = json.load(f)
-    
     print(f"✓ Loaded {len(target_samples)} target samples\n")
     
     # Output directory
@@ -355,10 +391,12 @@ def main():
         
         success = False
         attempts = 0
-        max_attempts = 3
-        excluded_example_sets = set()
+        max_attempts = len(RETRY_STRATEGIES)
+        excluded_example_ids = set()
         
         while attempts < max_attempts and not success:
+            strategy = RETRY_STRATEGIES[attempts]
+            n_examples, extra_instruction = strategy
             attempts += 1
             
             try:
@@ -367,18 +405,19 @@ def main():
                     target,
                     pattern_index,
                     embeddings_dict,
-                    exclude_ids=excluded_example_sets
+                    exclude_ids=excluded_example_ids,
+                    n_examples=n_examples
                 )
                 
                 # Create prompt
-                prompt = create_translation_prompt(target, fewshot_examples)
+                prompt = create_translation_prompt(target, fewshot_examples, extra_instruction)
                 
                 # Call GPT
                 translation = call_gpt_translate(client, prompt, model)
                 
                 if translation is None:
                     print(f"  ⚠️  Attempt {attempts}: API call failed, retrying...")
-                    time.sleep(2)  # Wait before retry
+                    time.sleep(2)
                     continue
                 
                 # Validate
@@ -388,11 +427,11 @@ def main():
                     target.get('sql_patterns', [])
                 )
                 
+                hint_label = f" ({n_examples} examples" + (", +hint)" if extra_instruction else ")")
                 print(f"  Translation: {translation[:60]}...")
-                print(f"  LaBSE: {labse_score:.4f} | Operators: {'✓' if operator_validation['is_valid'] else '✗'}")
+                print(f"  LaBSE: {labse_score:.4f} | Operators: {'✓' if operator_validation['is_valid'] else '✗'} | Attempt {attempts}{hint_label}")
                 
                 if is_valid:
-                    # Success!
                     result = target.copy()
                     result['vi_question'] = translation
                     result['labse_similarity'] = labse_score
@@ -402,24 +441,26 @@ def main():
                     
                     results.append(result)
                     success = True
-                    
                     print(f"  ✅ Success (attempt {attempts})")
                 else:
-                    # Validation failed, try different examples
-                    print(f"  ⚠️  Attempt {attempts}: Validation failed")
-                    
-                    # Exclude these examples for next attempt
-                    excluded_example_sets.update([e['id'] for e in fewshot_examples])
-                    
-                    time.sleep(1)  # Brief pause
+                    print(f"  ⚠️  Attempt {attempts}: Validation failed (LaBSE={labse_score:.4f}, operators={'ok' if operator_validation['is_valid'] else 'missing'})")
+                    # Exclude used examples for next attempt
+                    excluded_example_ids.update([e['id'] for e in fewshot_examples])
+                    time.sleep(1)
                 
             except Exception as e:
                 print(f"  ❌ Error on attempt {attempts}: {e}")
                 time.sleep(2)
         
         if not success:
-            print(f"  ❌ Failed after {max_attempts} attempts")
-            failed_samples.append(target)
+            print(f"  ❌ Failed after {max_attempts} attempts (strategies exhausted)")
+            failed_entry = target.copy()
+            failed_entry['failure_reason'] = (
+                f"Both attempts failed: "
+                f"attempt 1 ({RETRY_STRATEGIES[0][0]} examples), "
+                f"attempt 2 ({RETRY_STRATEGIES[1][0]} new examples + hint)"
+            )
+            failed_samples.append(failed_entry)
         
         print()
         
@@ -444,20 +485,23 @@ def main():
     print("SAVING RESULTS")
     print("="*80)
     print()
-    
+
     final_file = output_dir / 'gpt_translations_final.json'
     with open(final_file, 'w', encoding='utf-8') as f:
         json.dump(results, f, ensure_ascii=False, indent=2)
-    
     print(f"✓ Saved {len(results)} successful translations to: {final_file}")
-    
-    # Save failed samples
+
+    # Save failed samples log
+    failed_file = PROJECT_ROOT / 'results/quality_analysis/gpt_failed_samples.json'
     if failed_samples:
-        failed_file = PROJECT_ROOT / 'results/quality_analysis/gpt_failed_samples.json'
+        failed_file.parent.mkdir(parents=True, exist_ok=True)
         with open(failed_file, 'w', encoding='utf-8') as f:
             json.dump(failed_samples, f, ensure_ascii=False, indent=2)
-        
         print(f"⚠️  Saved {len(failed_samples)} failed samples to: {failed_file}")
+    else:
+        if failed_file.exists():
+            failed_file.unlink()
+        print("✅ No failed samples — all translated successfully")
     
     # Generate validation report
     labse_scores = [r['labse_similarity'] for r in results]

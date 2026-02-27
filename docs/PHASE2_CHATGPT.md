@@ -2,9 +2,9 @@
 
 ## Overview
 
-Phase 2 expands the dataset using GPT with few-shot prompting. This phase translates 3,000 additional samples using diverse few-shot examples from the gold seed (Phase 1).
+Phase 2 expands the dataset using GPT with few-shot prompting. This phase translates additional samples using diverse few-shot examples from the gold seed (Phase 1).
 
-**Goal**: Produce 3,000 GPT-translated samples with LaBSE similarity >= 0.75 and valid operator keywords
+**Goal**: Produce GPT-translated samples with sufficient LaBSE semantic similarity and valid SQL operator keywords.
 
 ## Key Features
 
@@ -15,19 +15,15 @@ Phase 2 expands the dataset using GPT with few-shot prompting. This phase transl
 
 ### 2. Intra-Class Diversity Selection
 For each target sample:
-- Select 3 few-shot examples with **same SQL pattern**
-- Maximize diversity using greedy algorithm:
-  - Example 1: Random from pattern pool
-  - Example 2: Max distance from Example 1
-  - Example 3: Max min-distance from {Example 1, Example 2}
+- Select N diverse few-shot examples with **same SQL pattern** (N depends on attempt)
+- Maximize diversity using greedy algorithm: each new example maximizes minimum cosine distance to all already-selected examples
 - Distance metric: Cosine distance on LaBSE embeddings
 
-### 3. Real-Time Validation
-Each translation is validated immediately:
-- **LaBSE similarity** >= 0.75
-- **Operator validation**: Vietnamese keywords match SQL operators
-- Retry with different examples if validation fails
-- Max 3 attempts per sample
+### 3. Automatic Tiered Retry
+Each translation goes through up to 2 attempts automatically:
+- **Attempt 1**: 3 diverse examples, standard prompt
+- **Attempt 2**: 5 completely new examples (the 3 from attempt 1 are excluded) + a literal-translation hint reminding the model to map SQL operators to Vietnamese keywords
+- If both attempts fail validation → log to `gpt_failed_samples.json` and continue to next sample
 
 ### 4. Checkpoint & Recovery
 - Saves progress every 100 samples
@@ -56,12 +52,10 @@ Each translation is validated immediately:
 
 **Process**:
 1. For each target sample:
-   - Select 3 diverse few-shot examples (same pattern, max diversity)
-   - Create prompt with examples + rules
-   - Call GPT API for translation
-   - Validate: LaBSE + operator consistency
-   - If valid → save result
-   - If invalid → retry with different examples (max 3 attempts)
+   - **Attempt 1**: Select 3 diverse few-shot examples (same pattern), build standard prompt, call GPT, validate
+   - If valid → save result and move on
+   - If invalid → **Attempt 2**: select 5 completely new examples (excluding attempt 1's examples), add operator hint to prompt, call GPT, validate
+   - If still invalid → log to failed samples and move on
 2. Save checkpoint every 100 samples
 3. Generate validation report
 
@@ -151,19 +145,22 @@ Vietnamese:
 ## Validation Criteria
 
 ### LaBSE Similarity
-- **Threshold**: >= 0.75
+- **Threshold**: >= 0.75 for normal questions; >= 0.70 for short questions (≤ 7 words)
+  - Short questions contain less context, making cross-lingual embeddings inherently less similar
 - **Metric**: Cosine similarity between English and Vietnamese embeddings
 - **Purpose**: Ensures semantic preservation
 
 ### Operator Validation
-Critical operators must have Vietnamese keywords:
+SQL operators must have corresponding Vietnamese keywords — but only when the operator is semantically explicit in the English question:
+
 - `COUNT` → bao nhiêu, số lượng, mấy, đếm
-- `MAX` → lớn nhất, cao nhất, nhiều nhất
-- `MIN` → nhỏ nhất, thấp nhất, ít nhất
+  - **Note**: Only checked when the English question explicitly asks "how many / count / number of". Questions like "which X is most common" use COUNT in SQL implicitly but do not require a count keyword in Vietnamese.
+- `MAX` → lớn nhất, cao nhất, nhiều nhất, tối đa
+- `MIN` → nhỏ nhất, thấp nhất, ít nhất, tối thiểu
 - `AVG` → trung bình, bình quân
 - `SUM` → tổng, tổng cộng
-- `GREATER_THAN` → lớn hơn, cao hơn, nhiều hơn
-- `LESS_THAN` → nhỏ hơn, thấp hơn, ít hơn
+- `GREATER_THAN` → lớn hơn, cao hơn, nhiều hơn, trên
+- `LESS_THAN` → nhỏ hơn, thấp hơn, ít hơn, dưới
 
 ## Usage
 
@@ -175,11 +172,10 @@ cd /home/hoadm/ViSpider
 # Activate virtual environment
 source venv/bin/activate
 
-# Step 1: Select 3K samples (use -n to control count)
+# Step 1: Select samples (use -n to control count, default 3000)
 python3 scripts/phase2_chatgpt/01_select_samples_for_gpt.py -n 3000
 
 # Step 2: Translate with validation (auto-loads gpt_target_samples.json)
-# Estimated ~7-8 sec/sample → ~6-7 hours for 3K samples
 python3 scripts/phase2_chatgpt/02_translate_with_validation.py
 ```
 
@@ -192,56 +188,32 @@ If script is interrupted:
 
 ### Monitor Progress
 
-Script outputs:
-- Real-time translation results
-- LaBSE scores and operator validation status
-- Progress stats every 100 samples
-- ETA based on current rate
+Script outputs real-time per-sample:
+- Translation preview
+- LaBSE score and operator validation status
+- Which attempt succeeded or failed
+- Progress stats and ETA every 100 samples (checkpoints)
 
 Example output:
 ```
 [1/3000] train-0001
   Translation: Có bao nhiêu ca sĩ trong cơ sở dữ liệu?
-  LaBSE: 0.8234 | Operators: ✓
+  LaBSE: 0.8234 | Operators: ✓ | Attempt 1 (3 examples)
   ✅ Success (attempt 1)
+
+[5/3000] train-0082
+  Translation: ...
+  LaBSE: 0.6812 | Operators: ✓ | Attempt 1 (3 examples)
+  ⚠️  Attempt 1: Validation failed (LaBSE=0.6812, operators=ok)
+  Translation: ...
+  LaBSE: 0.7901 | Operators: ✓ | Attempt 2 (5 examples, +hint)
+  ✅ Success (attempt 2)
 
 [100/3000] train-0245
   📊 Progress: 100/3000 (3.3%)
-  ⏱️  Rate: 0.45 samples/sec | ETA: 107.4 minutes
+  ⏱️  Rate: 0.13 samples/sec | ETA: 107.4 minutes
   💾 Checkpoint saved: gpt_translations_checkpoint_0001.json
 ```
-
-## Quality Expectations
-
-Based on Phase 1 manual translations and Phase 2 test run (n=20):
-- **Observed success rate**: 90% (18/20)
-- **Observed LaBSE mean**: 0.8499
-- **Observed operator validation**: 100%
-- **Average time per sample**: ~7.7 sec
-
-**Target for production run**:
-- Success rate >= 90%
-- LaBSE mean >= 0.80
-- Operator validation >= 90%
-
-If success rate is low:
-1. Check API key and model configuration
-2. Review failed samples for patterns
-3. Adjust prompt templates if needed
-4. Consider using higher-tier model (gpt-4o)
-
-## Cost Estimation
-
-For 3,000 samples with `gpt-5-mini` (reasoning effort: low):
-- Average tokens per request: ~600-800 (prompt + completion + reasoning)
-- Estimated total cost: **~$1-2 USD**
-
-For `gpt-4o-mini` (no reasoning):
-- Average tokens per request: ~500
-- Cost: ~$0.23 USD (input) + ~$0.90 USD (output) = **~$1.13 USD**
-
-For `gpt-4o`:
-- Cost: ~$7.50 USD (5x more expensive)
 
 ## Troubleshooting
 

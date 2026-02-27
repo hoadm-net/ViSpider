@@ -69,7 +69,7 @@ source venv/bin/activate
 # Step 1: Select samples (adjust -n as needed)
 python3 scripts/phase2_chatgpt/01_select_samples_for_gpt.py -n 3000
 
-# Step 2: Translate with validation (~7-8 sec/sample)
+# Step 2: Translate with validation (auto-loads gpt_target_samples.json)
 python3 scripts/phase2_chatgpt/02_translate_with_validation.py
 ```
 
