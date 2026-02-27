@@ -47,6 +47,9 @@ embedding_errors.json
 # Logs
 *.log
 
+# Model weights (large, use external storage)
+models/
+
 # Large files (use Git LFS if needed)
 *.bin
 *.pkl
