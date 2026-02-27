@@ -45,3 +45,5 @@ ipykernel>=6.22.0
 matplotlib>=3.7.0
 seaborn>=0.12.0
 scipy>=1.10.0
+# Spider official evaluation (process_sql.py)
+nltk>=3.8.0

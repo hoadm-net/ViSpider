@@ -68,3 +68,4 @@ models/
 # Temporary files
 *.tmp
 *.temp
+data/finetune_coder/

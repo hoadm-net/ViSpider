@@ -66,13 +66,21 @@ def load_model(args):
 
     if args.zero_shot:
         model_path = args.base
-        print(f"Loading base model (zero-shot): {model_path}")
+        print(f"Loading base model (zero-shot, 4-bit): {model_path}")
+        from transformers import BitsAndBytesConfig
+        bnb_cfg = BitsAndBytesConfig(
+            load_in_4bit=True,
+            bnb_4bit_compute_dtype=torch.bfloat16,
+            bnb_4bit_use_double_quant=True,
+            bnb_4bit_quant_type="nf4",
+        )
         tokenizer = AutoTokenizer.from_pretrained(model_path, trust_remote_code=True)
         if tokenizer.pad_token is None:
             tokenizer.pad_token = tokenizer.eos_token
         tokenizer.padding_side = "left"
         model = AutoModelForCausalLM.from_pretrained(
-            model_path, dtype=torch.bfloat16, device_map="auto", trust_remote_code=True
+            model_path, quantization_config=bnb_cfg,
+            device_map="auto", trust_remote_code=True
         )
     else:
         model_path = Path(args.model) if args.model else (
@@ -83,7 +91,9 @@ def load_model(args):
             print(f"   Run 04_finetune_coder.py --lang {args.lang} first, or use --zero-shot")
             sys.exit(1)
 
-        tokenizer = AutoTokenizer.from_pretrained(model_path, trust_remote_code=True)
+        tokenizer = AutoTokenizer.from_pretrained(
+            str(model_path), trust_remote_code=True
+        )
         if tokenizer.pad_token is None:
             tokenizer.pad_token = tokenizer.eos_token
         tokenizer.padding_side = "left"
@@ -91,16 +101,26 @@ def load_model(args):
         is_adapter = (model_path / "adapter_config.json").exists()
         if is_adapter:
             from peft import PeftModel
-            print(f"Loading base: {args.base}")
+            from transformers import BitsAndBytesConfig
+            bnb_cfg = BitsAndBytesConfig(
+                load_in_4bit=True,
+                bnb_4bit_compute_dtype=torch.bfloat16,
+                bnb_4bit_use_double_quant=True,
+                bnb_4bit_quant_type="nf4",
+            )
+            print(f"Loading base (4-bit): {args.base}")
             model = AutoModelForCausalLM.from_pretrained(
-                args.base, dtype=torch.bfloat16, device_map="auto", trust_remote_code=True
+                args.base,
+                quantization_config=bnb_cfg,
+                device_map="auto",
+                trust_remote_code=True,
             )
             print(f"Loading adapter: {model_path}")
             model = PeftModel.from_pretrained(model, str(model_path))
         else:
             print(f"Loading merged model: {model_path}")
             model = AutoModelForCausalLM.from_pretrained(
-                str(model_path), dtype=torch.bfloat16, device_map="auto", trust_remote_code=True
+                str(model_path), torch_dtype=torch.bfloat16, device_map="auto", trust_remote_code=True
             )
 
     model.eval()

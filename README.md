@@ -20,7 +20,6 @@ Extract and simplify the raw Spider dataset into a clean format for downstream t
 
 ### Step 2: Gold Seed Construction
 
-### Step 2: Gold Seed Construction
 
 Manually translate a representative subset of Spider questions into Vietnamese via Label Studio. Translations are validated using LaBSE semantic similarity and rule-based SQL operator checks. Low-quality samples are flagged for review and re-translation.
 

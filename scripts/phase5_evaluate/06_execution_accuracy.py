@@ -34,9 +34,21 @@ from pathlib import Path
 SCRIPT_DIR   = Path(__file__).resolve().parent
 PROJECT_ROOT = SCRIPT_DIR.parent.parent
 
+# Add spider_eval to path so we can import process_sql and evaluation
+SPIDER_EVAL_DIR = PROJECT_ROOT / "scripts/utils/spider_eval"
+sys.path.insert(0, str(SPIDER_EVAL_DIR))
+
 DEFAULT_DB_DIR   = PROJECT_ROOT / "data/raw/database"
 RESULTS_BASE     = PROJECT_ROOT / "results/phase5_evaluate"
 
+# Try to import Spider's official eval functions
+try:
+    from process_sql import Schema, get_schema, get_sql  # type: ignore
+    from evaluation import eval_exec_match               # type: ignore
+    SPIDER_EVAL_AVAILABLE = True
+except Exception as _e:
+    SPIDER_EVAL_AVAILABLE = False
+    print(f"⚠  Spider eval not available ({_e}), falling back to frozenset comparison")
 
 def parse_args():
     p = argparse.ArgumentParser(description="Compute Execution Accuracy for predicted SQL")
@@ -55,28 +67,6 @@ def parse_args():
 # SQL execution helpers
 # ---------------------------------------------------------------------------
 
-def execute_sql(db_path: Path, sql: str, timeout: float) -> tuple[bool, list | str]:
-    """
-    Execute SQL against a SQLite database.
-    Returns (success, result_rows_or_error_message).
-    """
-    try:
-        conn = sqlite3.connect(str(db_path), timeout=timeout)
-        conn.row_factory = sqlite3.Row
-        cursor = conn.cursor()
-        cursor.execute(sql)
-        rows = cursor.fetchall()
-        conn.close()
-        # Normalise: sort rows, lower-case strings for case-insensitive compare
-        normalised = frozenset(
-            tuple(_norm_val(v) for v in row)
-            for row in rows
-        )
-        return True, normalised
-    except Exception as e:
-        return False, str(e)
-
-
 def _norm_val(v):
     if isinstance(v, str):
         return v.strip().lower()
@@ -85,9 +75,54 @@ def _norm_val(v):
     return v
 
 
-def results_match(gold_result, pred_result) -> bool:
-    """True when both result sets are equal (order-insensitive)."""
-    return gold_result == pred_result
+def _exec_raw(db_path: Path, sql: str, timeout: float):
+    """Execute SQL, return (success, rows_or_error)."""
+    try:
+        conn = sqlite3.connect(str(db_path), timeout=timeout)
+        cursor = conn.cursor()
+        cursor.execute(sql)
+        rows = cursor.fetchall()
+        conn.close()
+        return True, rows
+    except Exception as e:
+        return False, str(e)
+
+
+def compare_results(db_path: Path, p_str: str, g_str: str,
+                    timeout: float) -> tuple[bool | None, str | None, str | None]:
+    """
+    Compare execution results using Spider's official eval_exec_match when
+    available, falling back to normalised frozenset comparison.
+
+    Returns (match: bool|None, pred_error: str|None, gold_error: str|None).
+    match is None when gold SQL itself fails.
+    """
+    db_str = str(db_path)
+
+    # ── Spider official path ────────────────────────────────────────────────
+    if SPIDER_EVAL_AVAILABLE:
+        try:
+            schema = Schema(get_schema(db_str))
+            p_sql  = get_sql(schema, p_str)
+            g_sql  = get_sql(schema, g_str)
+            # eval_exec_match opens its own connection; gold error will raise
+            match = eval_exec_match(db_str, p_str, g_str, p_sql, g_sql)
+            return match, None, None
+        except Exception:
+            pass  # fall through to frozenset path
+
+    # ── Frozenset fallback ──────────────────────────────────────────────────
+    gold_ok, gold_rows = _exec_raw(db_path, g_str, timeout)
+    if not gold_ok:
+        return None, None, gold_rows   # gold error
+
+    pred_ok, pred_rows = _exec_raw(db_path, p_str, timeout)
+    if not pred_ok:
+        return False, pred_rows, None  # pred error
+
+    gold_set = frozenset(tuple(_norm_val(v) for v in row) for row in gold_rows)
+    pred_set = frozenset(tuple(_norm_val(v) for v in row) for row in pred_rows)
+    return gold_set == pred_set, None, None
 
 
 # ---------------------------------------------------------------------------
@@ -134,20 +169,18 @@ def main():
             continue
 
         total += 1
-        gold_ok, gold_result = execute_sql(db_path, pred["gold_sql"], args.timeout)
-        pred_ok, pred_result = execute_sql(db_path, pred["pred_sql"], args.timeout)
+        match, pred_err, gold_err = compare_results(
+            db_path, pred["pred_sql"], pred["gold_sql"], args.timeout
+        )
 
-        if not gold_ok:
-            gold_errors.append({"id": pred["id"], "sql": pred["gold_sql"], "error": gold_result})
-            # Can't evaluate this sample
-            results_detail.append({**pred, "ex": None, "gold_error": gold_result})
+        if gold_err is not None:
+            gold_errors.append({"id": pred["id"], "sql": pred["gold_sql"], "error": gold_err})
+            results_detail.append({**pred, "ex": None, "gold_error": gold_err})
             continue
 
-        if not pred_ok:
-            pred_errors.append({"id": pred["id"], "sql": pred["pred_sql"], "error": pred_result})
+        if pred_err is not None:
+            pred_errors.append({"id": pred["id"], "sql": pred["pred_sql"], "error": pred_err})
             match = False
-        else:
-            match = results_match(gold_result, pred_result)
 
         if match:
             correct += 1
@@ -159,7 +192,7 @@ def main():
         results_detail.append({
             **pred,
             "ex":         ex_val,
-            "pred_error": None if pred_ok else pred_result,
+            "pred_error": pred_err,
         })
 
         if total % 50 == 0:
