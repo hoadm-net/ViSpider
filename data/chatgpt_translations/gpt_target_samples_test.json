@@ -1,0 +1,782 @@
+[
+  {
+    "id": "train-2532",
+    "db_id": "movie_1",
+    "question": "What are the names of all movies that received 3 or 4 stars?",
+    "vi_question": "Tên của tất cả các bộ phim nhận được 3 hoặc 4 sao là gì",
+    "query": "SELECT T2.title FROM Rating AS T1 JOIN Movie AS T2 ON T1.mID  =  T2.mID WHERE T1.stars  =  3 INTERSECT SELECT T2.title FROM Rating AS T1 JOIN Movie AS T2 ON T1.mID  =  T2.mID WHERE T1.stars  =  4",
+    "hardness": "extra_hard",
+    "patterns": [
+      "where",
+      "select_column",
+      "intersect",
+      "join"
+    ]
+  },
+  {
+    "id": "train-8415",
+    "db_id": "academic",
+    "question": "return me the authors who have the most number of papers in PVLDB .",
+    "vi_question": "Bộ phim nào có số lượng diễn viên đến từ Trung Quốc nhiều nhất?",
+    "query": "SELECT t1.name FROM publication AS t4 JOIN journal AS t2 ON t4.jid  =  t2.jid JOIN writes AS t3 ON t3.pid  =  t4.pid JOIN author AS t1 ON t3.aid  =  t1.aid WHERE t2.name  =  \"PVLDB\" GROUP BY t1.name ORDER BY COUNT ( DISTINCT t4.title ) DESC LIMIT 1;",
+    "hardness": "hard",
+    "patterns": [
+      "group_by",
+      "where",
+      "join",
+      "select_column",
+      "limit",
+      "order_by",
+      "multi_join"
+    ]
+  },
+  {
+    "id": "train-7968",
+    "db_id": "scholar",
+    "question": "Fetch me the most cited publications for Artificial Intelligence",
+    "vi_question": "Hãy lấy cho tôi các ấn phẩm được trích dẫn nhiều nhất về Trí tuệ Nhân tạo",
+    "query": "SELECT DISTINCT t4.citedpaperid  ,  COUNT ( t4.citingpaperid ) FROM paperkeyphrase AS t2 JOIN keyphrase AS t1 ON t2.keyphraseid  =  t1.keyphraseid JOIN paper AS t3 ON t3.paperid  =  t2.paperid JOIN cite AS t4 ON t3.paperid  =  t4.citedpaperid WHERE t1.keyphrasename  =  \"Artificial Intelligence\" GROUP BY t4.citedpaperid ORDER BY COUNT ( t4.citingpaperid ) DESC;",
+    "hardness": "hard",
+    "patterns": [
+      "group_by",
+      "where",
+      "join",
+      "agg_count",
+      "select_column",
+      "order_by",
+      "multi_join"
+    ]
+  },
+  {
+    "id": "train-6291",
+    "db_id": "city_record",
+    "question": "Give me a list of cities whose temperature in Mar is lower than that in July and which have also served as host cities?",
+    "vi_question": "Những thành phố nào có nhiệt độ tháng 3 thấp hơn tháng 7 và từng là thành phố đăng cai tổ chức một sự kiện.",
+    "query": "SELECT T1.city FROM city AS T1 JOIN temperature AS T2 ON T1.city_id  =  T2.city_id WHERE T2.Mar  <  T2.Jul INTERSECT SELECT T3.city FROM city AS T3 JOIN hosting_city AS T4 ON T3.city_id  =  T4.host_city",
+    "hardness": "extra_hard",
+    "patterns": [
+      "where",
+      "select_column",
+      "intersect",
+      "join"
+    ]
+  },
+  {
+    "id": "train-5261",
+    "db_id": "music_2",
+    "question": "Which vocal type has the band mate with first name \"Marianne\" played the most?",
+    "vi_question": "Thành viên ban nhạc có tên “Marianne” đã hát loại giọng  nào nhiều nhất?",
+    "query": "SELECT TYPE FROM vocals AS T1 JOIN band AS T2 ON T1.bandmate  =  T2.id WHERE firstname  =  \"Marianne\" GROUP BY TYPE ORDER BY count(*) DESC LIMIT 1",
+    "hardness": "hard",
+    "patterns": [
+      "group_by",
+      "where",
+      "join",
+      "select_column",
+      "limit",
+      "order_by"
+    ]
+  },
+  {
+    "id": "train-4479",
+    "db_id": "network_2",
+    "question": "Which person whose friends have the oldest average age?",
+    "vi_question": "Người nào có bạn bè có độ tuổi trung bình cao nhất?",
+    "query": "SELECT T2.name ,  avg(T1.age) FROM Person AS T1 JOIN PersonFriend AS T2 ON T1.name  =  T2.friend GROUP BY T2.name ORDER BY avg(T1.age) DESC LIMIT 1",
+    "hardness": "hard",
+    "patterns": [
+      "group_by",
+      "join",
+      "select_column",
+      "limit",
+      "order_by",
+      "agg_avg"
+    ]
+  },
+  {
+    "id": "train-3670",
+    "db_id": "baseball_1",
+    "question": "What are the name and id of the team with the most victories in 2008 postseason?",
+    "vi_question": "Tên và ID của đội có nhiều chiến thắng nhất trong vòng loại trực tiếp năm 2008 là gì?",
+    "query": "SELECT T2.name ,  T1.team_id_winner FROM postseason AS T1 JOIN team AS T2 ON T1.team_id_winner  =  T2.team_id_br WHERE T1.year  =  2008 GROUP BY T1.team_id_winner ORDER BY count(*) DESC LIMIT 1;",
+    "hardness": "hard",
+    "patterns": [
+      "group_by",
+      "where",
+      "join",
+      "select_column",
+      "limit",
+      "order_by"
+    ]
+  },
+  {
+    "id": "train-2225",
+    "db_id": "formula_1",
+    "question": "For each race name, What is the maximum fastest lap speed for races after 2004 ordered by year?",
+    "vi_question": "Đối với mỗi tên cuộc đua, tốc độ vòng nhanh nhất tối đa của các cuộc đua sau năm 2004 là bao nhiêu, được sắp xếp theo năm?",
+    "query": "SELECT max(T2.fastestlapspeed) ,  T1.name ,  T1.year FROM races AS T1 JOIN results AS T2 ON T1.raceid = T2.raceid WHERE T1.year > 2014 GROUP BY T1.name ORDER BY T1.year",
+    "hardness": "hard",
+    "patterns": [
+      "group_by",
+      "where",
+      "join",
+      "agg_max",
+      "select_column",
+      "order_by"
+    ]
+  },
+  {
+    "id": "train-6267",
+    "db_id": "ship_1",
+    "question": "Find the name of the ships that are steered by both a captain with Midshipman rank and a captain with Lieutenant rank.",
+    "vi_question": "Tìm tên của các con tàu được chỉ huy bởi cả thuyền trưởng có cấp bậc học viên sĩ quan hải quân và thuyền trưởng có cấp bậc Trung úy",
+    "query": "SELECT t1.name FROM ship AS t1 JOIN captain AS t2 ON t1.ship_id  =  t2.ship_id WHERE t2.rank  =  'Midshipman' INTERSECT SELECT t1.name FROM ship AS t1 JOIN captain AS t2 ON t1.ship_id  =  t2.ship_id WHERE t2.rank  =  'Lieutenant'",
+    "hardness": "extra_hard",
+    "patterns": [
+      "where",
+      "select_column",
+      "intersect",
+      "join"
+    ]
+  },
+  {
+    "id": "train-8397",
+    "db_id": "academic",
+    "question": "return me the keyword, which have been contained by the most number of papers by \" H. V. Jagadish \" .",
+    "vi_question": "Trả về từ khóa được xuất hiện trong nhiều bài báo nhất của “H. V. Jagadish”.",
+    "query": "SELECT t1.keyword FROM publication_keyword AS t5 JOIN keyword AS t1 ON t5.kid  =  t1.kid JOIN publication AS t3 ON t3.pid  =  t5.pid JOIN writes AS t4 ON t4.pid  =  t3.pid JOIN author AS t2 ON t4.aid  =  t2.aid WHERE t2.name  =  \"H. V. Jagadish\" GROUP BY t1.keyword ORDER BY COUNT ( DISTINCT t3.title ) DESC LIMIT 1;",
+    "hardness": "hard",
+    "patterns": [
+      "group_by",
+      "where",
+      "join",
+      "select_column",
+      "limit",
+      "order_by",
+      "multi_join"
+    ]
+  },
+  {
+    "id": "train-4324",
+    "db_id": "tracking_grants_for_research",
+    "question": "What are the details of the project that is producing both patents and papers as outcomes?",
+    "vi_question": "Chi tiết mô tả của những dự án nào tạo ra cả bằng sáng chế và bài báo khoa học  làm kết quả",
+    "query": "SELECT T1.project_details FROM Projects AS T1 JOIN Project_outcomes AS T2 ON T1.project_id  =  T2.project_id WHERE T2.outcome_code  =  'Paper' INTERSECT SELECT T1.project_details FROM Projects AS T1 JOIN Project_outcomes AS T2 ON T1.project_id  =  T2.project_id WHERE T2.outcome_code  =  'Patent'",
+    "hardness": "extra_hard",
+    "patterns": [
+      "where",
+      "select_column",
+      "intersect",
+      "join"
+    ]
+  },
+  {
+    "id": "train-5398",
+    "db_id": "tracking_software_problems",
+    "question": "Which staff members who reported problems from the product \"rem\" but not \"aut\"? Give me their first and last names.",
+    "vi_question": "Các nhân viên nào mà có báo cáo sự cố về sản phẩm 'rem' mà không báo cáo về sản phẩm 'aut'? Liệt kê tên và họ của những nhân viên đó.",
+    "query": "SELECT T3.staff_first_name ,  T3.staff_last_name FROM problems AS T1 JOIN product AS T2 JOIN staff AS T3 ON T1.product_id = T2.product_id AND T1.reported_by_staff_id = T3.staff_id WHERE T2.product_name = \"rem\" EXCEPT SELECT T3.staff_first_name ,  T3.staff_last_name FROM problems AS T1 JOIN product AS T2 JOIN staff AS T3 ON T1.product_id = T2.product_id AND T1.reported_by_staff_id = T3.staff_id WHERE T2.product_name = \"aut\"",
+    "hardness": "extra_hard",
+    "patterns": [
+      "where",
+      "except",
+      "join",
+      "select_column",
+      "multi_join"
+    ]
+  },
+  {
+    "id": "train-8132",
+    "db_id": "scholar",
+    "question": "What is the most cited paper at sigcomm ?",
+    "vi_question": "Bài báo được trích dẫn nhiều nhất tại SIGCOMM là gì?",
+    "query": "SELECT DISTINCT t3.citedpaperid  ,  COUNT ( t3.citingpaperid ) FROM paper AS t1 JOIN cite AS t3 ON t1.paperid  =  t3.citedpaperid JOIN venue AS t2 ON t2.venueid  =  t1.venueid WHERE t2.venuename  =  \"sigcomm\" GROUP BY t3.citedpaperid ORDER BY COUNT ( t3.citingpaperid ) DESC;",
+    "hardness": "hard",
+    "patterns": [
+      "group_by",
+      "where",
+      "join",
+      "agg_count",
+      "select_column",
+      "order_by",
+      "multi_join"
+    ]
+  },
+  {
+    "id": "train-8607",
+    "db_id": "restaurants",
+    "question": "where is the best american restaurant in the bay area ?",
+    "vi_question": "Hãy cho tôi biết nhà hàng đồ Mỹ nào tốt nhất ở khu vực vùng Vịnh?",
+    "query": "SELECT t3.house_number  ,  t1.name FROM restaurant AS t1 JOIN geographic AS t2 ON t1.city_name  =  t2.city_name JOIN LOCATION AS t3 ON t1.id  =  t3.restaurant_id WHERE t2.region  =  \"bay area\" AND t1.food_type  =  \"american\" AND t1.rating  =  ( SELECT MAX ( t1.rating ) FROM restaurant AS t1 JOIN geographic AS t2 ON t1.city_name  =  t2.city_name WHERE t2.region  =  \"bay area\" AND t1.food_type  =  \"american\" );",
+    "hardness": "extra_hard",
+    "patterns": [
+      "where",
+      "join",
+      "nested_subquery",
+      "select_column",
+      "multi_join"
+    ]
+  },
+  {
+    "id": "train-0039",
+    "db_id": "farm",
+    "question": "Show the status of the city that has hosted the greatest number of competitions.",
+    "vi_question": "Hiển thị trạng thái của thành phố đã đăng cai số lượng cuộc thi nhiều nhất.",
+    "query": "SELECT T1.Status FROM city AS T1 JOIN farm_competition AS T2 ON T1.City_ID  =  T2.Host_city_ID GROUP BY T2.Host_city_ID ORDER BY COUNT(*) DESC LIMIT 1",
+    "hardness": "hard",
+    "patterns": [
+      "group_by",
+      "join",
+      "select_column",
+      "limit",
+      "order_by"
+    ]
+  },
+  {
+    "id": "train-7972",
+    "db_id": "scholar",
+    "question": "hot topics at NIPS 2015",
+    "vi_question": "Các chủ đề nóng tại NIPS 2015",
+    "query": "SELECT DISTINCT COUNT ( t3.paperid )  ,  t1.keyphraseid FROM paperkeyphrase AS t2 JOIN keyphrase AS t1 ON t2.keyphraseid  =  t1.keyphraseid JOIN paper AS t3 ON t3.paperid  =  t2.paperid JOIN venue AS t4 ON t4.venueid  =  t3.venueid WHERE t3.year  =  2015 AND t4.venuename  =  \"NIPS\" GROUP BY t1.keyphraseid ORDER BY COUNT ( t3.paperid ) DESC;",
+    "hardness": "hard",
+    "patterns": [
+      "group_by",
+      "where",
+      "join",
+      "agg_count",
+      "select_column",
+      "order_by",
+      "multi_join"
+    ]
+  },
+  {
+    "id": "train-7971",
+    "db_id": "scholar",
+    "question": "most popular topics at NIPS 2015",
+    "vi_question": "Các chủ đề phổ biến tại NIPS 2015",
+    "query": "SELECT DISTINCT COUNT ( t3.paperid )  ,  t1.keyphraseid FROM paperkeyphrase AS t2 JOIN keyphrase AS t1 ON t2.keyphraseid  =  t1.keyphraseid JOIN paper AS t3 ON t3.paperid  =  t2.paperid JOIN venue AS t4 ON t4.venueid  =  t3.venueid WHERE t3.year  =  2015 AND t4.venuename  =  \"NIPS\" GROUP BY t1.keyphraseid ORDER BY COUNT ( t3.paperid ) DESC;",
+    "hardness": "hard",
+    "patterns": [
+      "group_by",
+      "where",
+      "join",
+      "agg_count",
+      "select_column",
+      "order_by",
+      "multi_join"
+    ]
+  },
+  {
+    "id": "train-8392",
+    "db_id": "academic",
+    "question": "return me the conference, which has the most number of papers containing keyword \" Relational Database \" .",
+    "vi_question": "Trả về tên tạp chí có số lượng bài báo chứa từ khóa “Relational Database” nhiều nhất",
+    "query": "SELECT t2.name FROM publication_keyword AS t4 JOIN keyword AS t1 ON t4.kid  =  t1.kid JOIN publication AS t3 ON t3.pid  =  t4.pid JOIN conference AS t2 ON t3.cid  =  t2.cid WHERE t1.keyword  =  \"Relational Database\" GROUP BY t2.name ORDER BY COUNT ( DISTINCT t3.title ) DESC LIMIT 1;",
+    "hardness": "hard",
+    "patterns": [
+      "group_by",
+      "where",
+      "join",
+      "select_column",
+      "limit",
+      "order_by",
+      "multi_join"
+    ]
+  },
+  {
+    "id": "train-3637",
+    "db_id": "baseball_1",
+    "question": "Which player has the most all star game experiences? Give me the first name, last name and id of the player, as well as the number of times the player participated in all star game.",
+    "vi_question": "Cầu thủ nào có nhiều lần tham dự trận đấu All-Star nhất? Hãy cho tôi biết tên, họ, ID của cầu thủ đó, cũng như số lần cầu thủ tham dự trận đấu All-Star.",
+    "query": "SELECT T1.name_first , T1.name_last ,  T1.player_id ,   count(*) FROM player AS T1 JOIN all_star AS T2 ON T1.player_id  =  T2.player_id GROUP BY T1.player_id ORDER BY count(*) DESC LIMIT 1;",
+    "hardness": "hard",
+    "patterns": [
+      "group_by",
+      "join",
+      "agg_count",
+      "select_column",
+      "limit",
+      "order_by"
+    ]
+  },
+  {
+    "id": "train-3870",
+    "db_id": "insurance_policies",
+    "question": "Find the claim id and the number of settlements made for the claim with the most recent settlement date.",
+    "vi_question": "Tìm mã yêu cầu bồi thường và số lượng lần dàn xếp được thực hiện cho yêu cầu có ngày dàn xếp gần đây nhất.",
+    "query": "SELECT count(*) ,  T1.claim_id FROM Claims AS T1 JOIN Settlements AS T2 ON T1.claim_id  =  T2.claim_id GROUP BY T1.claim_id ORDER BY T1.Date_Claim_Settled DESC LIMIT 1",
+    "hardness": "hard",
+    "patterns": [
+      "group_by",
+      "join",
+      "agg_count",
+      "select_column",
+      "limit",
+      "order_by"
+    ]
+  },
+  {
+    "id": "train-3276",
+    "db_id": "college_1",
+    "question": "What is the first names of the professors from the history department who do not teach a class.",
+    "vi_question": "Tên riêng của các giáo sư thuộc khoa Lịch sử mà không giảng dạy lớp học nào là gì?",
+    "query": "SELECT T1.emp_fname FROM employee AS T1 JOIN professor AS T2 ON T1.emp_num  =  T2.emp_num JOIN department AS T3 ON T2.dept_code  =  T3.dept_code WHERE T3.dept_name  =  'History' EXCEPT SELECT T4.emp_fname FROM employee AS T4 JOIN CLASS AS T5 ON T4.emp_num  =  T5.prof_num",
+    "hardness": "extra_hard",
+    "patterns": [
+      "where",
+      "except",
+      "join",
+      "select_column",
+      "multi_join"
+    ]
+  },
+  {
+    "id": "train-8613",
+    "db_id": "restaurants",
+    "question": "give me the best american in the bay area ?",
+    "vi_question": "Hãy cho biết số nhà và tên của những nhà hàng đồ Mỹ có điểm đánh giá cao nhất tại khu vực vùng Vịnh.",
+    "query": "SELECT t3.house_number  ,  t1.name FROM restaurant AS t1 JOIN geographic AS t2 ON t1.city_name  =  t2.city_name JOIN LOCATION AS t3 ON t1.id  =  t3.restaurant_id WHERE t2.region  =  \"bay area\" AND t1.food_type  =  \"american\" AND t1.rating  =  ( SELECT MAX ( t1.rating ) FROM restaurant AS t1 JOIN geographic AS t2 ON t1.city_name  =  t2.city_name WHERE t2.region  =  \"bay area\" AND t1.food_type  =  \"american\" );",
+    "hardness": "extra_hard",
+    "patterns": [
+      "where",
+      "join",
+      "nested_subquery",
+      "select_column",
+      "multi_join"
+    ]
+  },
+  {
+    "id": "train-7969",
+    "db_id": "scholar",
+    "question": "topics at ACL 2014",
+    "vi_question": "Các chủ đề tại ACL 2014",
+    "query": "SELECT DISTINCT COUNT ( t3.paperid )  ,  t1.keyphraseid FROM paperkeyphrase AS t2 JOIN keyphrase AS t1 ON t2.keyphraseid  =  t1.keyphraseid JOIN paper AS t3 ON t3.paperid  =  t2.paperid JOIN venue AS t4 ON t4.venueid  =  t3.venueid WHERE t3.year  =  2014 AND t4.venuename  =  \"ACL\" GROUP BY t1.keyphraseid ORDER BY COUNT ( t3.paperid ) DESC;",
+    "hardness": "hard",
+    "patterns": [
+      "group_by",
+      "where",
+      "join",
+      "agg_count",
+      "select_column",
+      "order_by",
+      "multi_join"
+    ]
+  },
+  {
+    "id": "train-5736",
+    "db_id": "dorm_1",
+    "question": "How many students are older than average for each gender?",
+    "vi_question": "Có bao nhiêu sinh viên lớn tuổi hơn so với mức trung bình chia theo từng giới tinh?",
+    "query": "SELECT count(*) ,  sex FROM student WHERE age  >  (SELECT avg(age) FROM student) GROUP BY sex",
+    "hardness": "extra_hard",
+    "patterns": [
+      "group_by",
+      "where",
+      "agg_count",
+      "nested_subquery",
+      "select_column"
+    ]
+  },
+  {
+    "id": "train-3273",
+    "db_id": "college_1",
+    "question": "Which department has the most professors with a Ph.D.?",
+    "vi_question": "Khoa nào có nhiều giáo sư có bằng tiến sĩ (Ph.D.) nhất?",
+    "query": "SELECT T2.dept_name ,  T1.dept_code FROM professor AS T1 JOIN department AS T2 ON T1.dept_code  =  T2.dept_code WHERE T1.prof_high_degree  =  'Ph.D.' GROUP BY T1.dept_code ORDER BY count(*) DESC LIMIT 1",
+    "hardness": "hard",
+    "patterns": [
+      "group_by",
+      "where",
+      "join",
+      "select_column",
+      "limit",
+      "order_by"
+    ]
+  },
+  {
+    "id": "train-5029",
+    "db_id": "soccer_2",
+    "question": "Find the names of states that have some college students playing in goalie and mid positions.",
+    "vi_question": "Tìm tên của các bang  có sinh viên đại học chơi ở cả hai vị trí: \"goalie\" và \"mid\".",
+    "query": "SELECT T1.state FROM college AS T1 JOIN tryout AS T2 ON T1.cName  =  T2.cName WHERE T2.pPos  =  'goalie' INTERSECT SELECT T1.state FROM college AS T1 JOIN tryout AS T2 ON T1.cName  =  T2.cName WHERE T2.pPos  =  'mid'",
+    "hardness": "extra_hard",
+    "patterns": [
+      "where",
+      "select_column",
+      "intersect",
+      "join"
+    ]
+  },
+  {
+    "id": "train-3044",
+    "db_id": "loan_1",
+    "question": "What are the names of customers who have taken both Mortgage and Auto loans?",
+    "vi_question": "Tên của những khách hàng đã vay cả khoản vay Mortgage (thế chấp) và Auto (vay mua xe) là gì?",
+    "query": "SELECT T1.cust_name FROM customer AS T1 JOIN loan AS T2 ON T1.cust_id  =  T2.cust_id WHERE loan_type  =  'Mortgages' INTERSECT SELECT T1.cust_name FROM customer AS T1 JOIN loan AS T2 ON T1.cust_id  =  T2.cust_id WHERE loan_type  =  'Auto'",
+    "hardness": "extra_hard",
+    "patterns": [
+      "where",
+      "select_column",
+      "intersect",
+      "join"
+    ]
+  },
+  {
+    "id": "train-4738",
+    "db_id": "department_store",
+    "question": "Return ids of all the products that are supplied by supplier id 2 and are more expensive than the average price of all products.",
+    "vi_question": "Trả về id của tất cả các sản phẩm được cung cấp bởi supplier có id = 2 và có giá cao hơn giá trung bình của tất cả sản phẩm.",
+    "query": "SELECT T1.product_id FROM product_suppliers AS T1 JOIN products AS T2 ON T1.product_id  =  T2.product_id WHERE T1.supplier_id  =  2 AND T2.product_price  >  (SELECT avg(product_price) FROM products)",
+    "hardness": "extra_hard",
+    "patterns": [
+      "nested_subquery",
+      "where",
+      "select_column",
+      "join"
+    ]
+  },
+  {
+    "id": "train-8513",
+    "db_id": "imdb",
+    "question": "What is the number of movies that \" Brad Pitt \" acts in per year ?",
+    "vi_question": "Số lượng phim mà “Brad Pitt” tham gia diễn xuất mỗi năm là bao nhiêu?",
+    "query": "SELECT COUNT ( DISTINCT t2.title  )  ,  t2.release_year FROM CAST AS t3 JOIN actor AS t1 ON t3.aid  =  t1.aid JOIN movie AS t2 ON t2.mid  =  t3.msid WHERE t1.name  =  \"Brad Pitt\" GROUP BY t2.release_year;",
+    "hardness": "hard",
+    "patterns": [
+      "group_by",
+      "where",
+      "join",
+      "agg_count",
+      "select_column",
+      "multi_join"
+    ]
+  },
+  {
+    "id": "train-3642",
+    "db_id": "baseball_1",
+    "question": "In 2014, what are the id and rank of the team that has the largest average number of attendance?",
+    "vi_question": "Trong năm 2014, ID và thứ hạng của đội có số lượng khán giả trung bình lớn nhất là gì?",
+    "query": "SELECT T2.team_id ,  T2.rank FROM home_game AS T1 JOIN team AS T2 ON T1.team_id  =  T2.team_id WHERE T1.year  =  2014 GROUP BY T1.team_id ORDER BY avg(T1.attendance) DESC LIMIT 1;",
+    "hardness": "hard",
+    "patterns": [
+      "group_by",
+      "where",
+      "join",
+      "select_column",
+      "limit",
+      "order_by"
+    ]
+  },
+  {
+    "id": "train-0595",
+    "db_id": "store_1",
+    "question": "What is the full name of the employee who has the most customers?",
+    "vi_question": "Họ và tên đầy đủ của nhân viên có nhiều khách hàng nhất là gì?",
+    "query": "SELECT T1.first_name , T1.last_name FROM employees AS T1 JOIN customers AS T2 ON T1.id  =  T2.support_rep_id GROUP BY T1.id ORDER BY count(*) DESC LIMIT 1",
+    "hardness": "hard",
+    "patterns": [
+      "group_by",
+      "join",
+      "select_column",
+      "limit",
+      "order_by"
+    ]
+  },
+  {
+    "id": "train-8606",
+    "db_id": "restaurants",
+    "question": "what is the best american restaurant in the bay area ?",
+    "vi_question": "Hãy cho tôi biết nhà hàng đồ Mỹ nào tốt nhất ở khu vực vùng Vịnh?",
+    "query": "SELECT t3.house_number  ,  t1.name FROM restaurant AS t1 JOIN geographic AS t2 ON t1.city_name  =  t2.city_name JOIN LOCATION AS t3 ON t1.id  =  t3.restaurant_id WHERE t2.region  =  \"bay area\" AND t1.food_type  =  \"american\" AND t1.rating  =  ( SELECT MAX ( t1.rating ) FROM restaurant AS t1 JOIN geographic AS t2 ON t1.city_name  =  t2.city_name WHERE t2.region  =  \"bay area\" AND t1.food_type  =  \"american\" );",
+    "hardness": "extra_hard",
+    "patterns": [
+      "where",
+      "join",
+      "nested_subquery",
+      "select_column",
+      "multi_join"
+    ]
+  },
+  {
+    "id": "train-5367",
+    "db_id": "tracking_software_problems",
+    "question": "How many problems does the product with the most problems have? List the number of the problems and product name.",
+    "vi_question": "Sản phẩm có nhiều vấn đề nhất có bao nhiêu vấn đề? Hãy liệt kê số lượng vấn đề và tên sản phẩm.",
+    "query": "SELECT count(*) ,  T1.product_name FROM product AS T1 JOIN problems AS T2 ON T1.product_id = T2.product_id GROUP BY T1.product_name ORDER BY count(*) DESC LIMIT 1",
+    "hardness": "hard",
+    "patterns": [
+      "group_by",
+      "join",
+      "agg_count",
+      "select_column",
+      "limit",
+      "order_by"
+    ]
+  },
+  {
+    "id": "train-7941",
+    "db_id": "scholar",
+    "question": "what is the most cited paper of ohad shamir ?",
+    "vi_question": "Bài báo được trích dẫn nhiều nhất của Ohad Shamir là gì?",
+    "query": "SELECT DISTINCT t4.citedpaperid  ,  COUNT ( t4.citedpaperid ) FROM paper AS t3 JOIN cite AS t4 ON t3.paperid  =  t4.citedpaperid JOIN writes AS t2 ON t2.paperid  =  t3.paperid JOIN author AS t1 ON t2.authorid  =  t1.authorid WHERE t1.authorname  =  \"ohad shamir\" GROUP BY t4.citedpaperid ORDER BY COUNT ( t4.citedpaperid ) DESC;",
+    "hardness": "hard",
+    "patterns": [
+      "group_by",
+      "where",
+      "join",
+      "agg_count",
+      "select_column",
+      "order_by",
+      "multi_join"
+    ]
+  },
+  {
+    "id": "train-6912",
+    "db_id": "tracking_orders",
+    "question": "Find the id of the customers who have order status both \"On Road\" and \"Shipped\".",
+    "vi_question": "Tìm kiếm id của Những khách hàng nào có cả hai trạng thái đơn hàng ‘On Road’ và ‘Shipped’? Liệt kê mã khách hàng",
+    "query": "SELECT T1.customer_id FROM customers AS T1 JOIN orders AS T2 ON T1.customer_id = T2.customer_id WHERE T2.order_status = \"On Road\" INTERSECT SELECT T1.customer_id FROM customers AS T1 JOIN orders AS T2 ON T1.customer_id = T2.customer_id WHERE T2.order_status = \"Shipped\"",
+    "hardness": "extra_hard",
+    "patterns": [
+      "where",
+      "select_column",
+      "intersect",
+      "join"
+    ]
+  },
+  {
+    "id": "train-2499",
+    "db_id": "movie_1",
+    "question": "What are the movie titles and average rating of the movies with the lowest average rating?",
+    "vi_question": "Tiêu đề phim và điểm đánh giá trung bình của các bộ phim có điểm đánh giá trung bình thấp nhất là gì",
+    "query": "SELECT T2.title ,  avg(T1.stars) FROM Rating AS T1 JOIN Movie AS T2 ON T1.mID  =  T2.mID GROUP BY T1.mID ORDER BY avg(T1.stars) LIMIT 1",
+    "hardness": "hard",
+    "patterns": [
+      "group_by",
+      "join",
+      "select_column",
+      "limit",
+      "order_by",
+      "agg_avg"
+    ]
+  },
+  {
+    "id": "train-4736",
+    "db_id": "department_store",
+    "question": "Find the name and address of the customers who have both New and Pending orders.",
+    "vi_question": "Tìm tên và địa chỉ của các khách hàng có cả đơn hàng trạng thái “New” và “Pending\"",
+    "query": "SELECT T1.customer_name ,  T1.customer_address FROM customers AS T1 JOIN customer_orders AS T2 ON T1.customer_id  =  T2.customer_id WHERE T2.order_status_code  =  \"New\" INTERSECT SELECT T1.customer_name ,  T1.customer_address FROM customers AS T1 JOIN customer_orders AS T2 ON T1.customer_id  =  T2.customer_id WHERE T2.order_status_code  =  \"Pending\"",
+    "hardness": "extra_hard",
+    "patterns": [
+      "where",
+      "select_column",
+      "intersect",
+      "join"
+    ]
+  },
+  {
+    "id": "train-7814",
+    "db_id": "scholar",
+    "question": "How many papers were written on Multiuser Receiver in the Decision Feedback this year ?",
+    "vi_question": "Có bao nhiêu bài báo được viết về “Multiuser Receiver in the Decision Feedback” trong năm nay?",
+    "query": "SELECT DISTINCT t3.paperid FROM paperkeyphrase AS t2 JOIN keyphrase AS t1 ON t2.keyphraseid  =  t1.keyphraseid JOIN paper AS t3 ON t3.paperid  =  t2.paperid WHERE t1.keyphrasename  =  \"Multiuser Receiver in the Decision Feedback\" AND t3.year  =  2016 GROUP BY t3.paperid HAVING COUNT ( DISTINCT t1.keyphrasename )  >  1;",
+    "hardness": "hard",
+    "patterns": [
+      "group_by",
+      "where",
+      "join",
+      "select_column",
+      "multi_join",
+      "having"
+    ]
+  },
+  {
+    "id": "train-2497",
+    "db_id": "movie_1",
+    "question": "Find the movies with the highest average rating. Return the movie titles and average rating.",
+    "vi_question": "Tìm các bộ phim có điểm đánh giá trung bình cao nhất. Trả về tiêu đề phim và điểm đánh giá trung bình.",
+    "query": "SELECT T2.title ,  avg(T1.stars) FROM Rating AS T1 JOIN Movie AS T2 ON T1.mID  =  T2.mID GROUP BY T1.mID ORDER BY avg(T1.stars) DESC LIMIT 1",
+    "hardness": "hard",
+    "patterns": [
+      "group_by",
+      "join",
+      "select_column",
+      "limit",
+      "order_by",
+      "agg_avg"
+    ]
+  },
+  {
+    "id": "train-3636",
+    "db_id": "baseball_1",
+    "question": "What are the first name, last name and id of the player with the most all star game experiences? Also list the count.",
+    "vi_question": "Tên, họ và ID của cầu thủ có nhiều lần tham dự trận đấu All-Star nhất là gì? Đồng thời liệt kê số lần tham dự.",
+    "query": "SELECT T1.name_first , T1.name_last ,  T1.player_id ,   count(*) FROM player AS T1 JOIN all_star AS T2 ON T1.player_id  =  T2.player_id GROUP BY T1.player_id ORDER BY count(*) DESC LIMIT 1;",
+    "hardness": "hard",
+    "patterns": [
+      "group_by",
+      "join",
+      "agg_count",
+      "select_column",
+      "limit",
+      "order_by"
+    ]
+  },
+  {
+    "id": "train-8542",
+    "db_id": "restaurants",
+    "question": "what is the best french restaurant in san francisco ?",
+    "vi_question": "Nhà hàng Pháp tốt nhất ở San Francisco là gì?",
+    "query": "SELECT t2.house_number  ,  t1.name FROM restaurant AS t1 JOIN LOCATION AS t2 ON t1.id  =  t2.restaurant_id WHERE t2.city_name  =  \"san francisco\" AND t1.food_type  =  \"french\" AND t1.rating  =  ( SELECT MAX ( t1.rating ) FROM restaurant AS t1 JOIN LOCATION AS t2 ON t1.id  =  t2.restaurant_id WHERE t2.city_name  =  \"san francisco\" AND t1.food_type  =  \"french\" );",
+    "hardness": "extra_hard",
+    "patterns": [
+      "nested_subquery",
+      "where",
+      "select_column",
+      "join"
+    ]
+  },
+  {
+    "id": "train-7614",
+    "db_id": "scholar",
+    "question": "Has mirella lapata written any papers in 2016 ?",
+    "vi_question": "Mirella Lapata có công bố các bài báo trong năm 2016 không ?",
+    "query": "SELECT DISTINCT COUNT ( t3.paperid )  ,  t2.authorid FROM writes AS t2 JOIN author AS t1 ON t2.authorid  =  t1.authorid JOIN paper AS t3 ON t2.paperid  =  t3.paperid WHERE t1.authorname  =  \"mirella lapata\" AND t3.year  =  2016 GROUP BY t2.authorid;",
+    "hardness": "hard",
+    "patterns": [
+      "group_by",
+      "where",
+      "join",
+      "agg_count",
+      "select_column",
+      "multi_join"
+    ]
+  },
+  {
+    "id": "train-8101",
+    "db_id": "scholar",
+    "question": "How many citations does luke zettlemoyer have per year",
+    "vi_question": "Luke Zettlemoyer có bao nhiêu lượt trích dẫn mỗi năm?",
+    "query": "SELECT DISTINCT COUNT ( t4.citedpaperid )  ,  t3.year FROM paper AS t3 JOIN cite AS t4 ON t3.paperid  =  t4.citedpaperid JOIN writes AS t2 ON t2.paperid  =  t3.paperid JOIN author AS t1 ON t2.authorid  =  t1.authorid WHERE t1.authorname  =  \"luke zettlemoyer\" GROUP BY t3.year;",
+    "hardness": "hard",
+    "patterns": [
+      "group_by",
+      "where",
+      "join",
+      "agg_count",
+      "select_column",
+      "multi_join"
+    ]
+  },
+  {
+    "id": "train-8394",
+    "db_id": "academic",
+    "question": "return me the journal, which has the most number of papers containing keyword \" Relational Database \" .",
+    "vi_question": "Trả về tên tạp chí có số lượng bài báo chứa từ khóa “Relational Database” nhiều nhất",
+    "query": "SELECT t3.name FROM publication_keyword AS t4 JOIN keyword AS t1 ON t4.kid  =  t1.kid JOIN publication AS t2 ON t2.pid  =  t4.pid JOIN journal AS t3 ON t2.jid  =  t3.jid WHERE t1.keyword  =  \"Relational Database\" GROUP BY t3.name ORDER BY COUNT ( DISTINCT t2.title ) DESC LIMIT 1;",
+    "hardness": "hard",
+    "patterns": [
+      "group_by",
+      "where",
+      "join",
+      "select_column",
+      "limit",
+      "order_by",
+      "multi_join"
+    ]
+  },
+  {
+    "id": "train-7948",
+    "db_id": "scholar",
+    "question": "number of ACL papers by author",
+    "vi_question": "Số  bài báo ACL theo từng tác giả sáng tác",
+    "query": "SELECT DISTINCT COUNT ( t2.paperid )  ,  t1.authorid FROM venue AS t3 JOIN paper AS t2 ON t3.venueid  =  t2.venueid JOIN writes AS t1 ON t1.paperid  =  t2.paperid WHERE t3.venuename  =  \"ACL\" GROUP BY t1.authorid;",
+    "hardness": "hard",
+    "patterns": [
+      "group_by",
+      "where",
+      "join",
+      "agg_count",
+      "select_column",
+      "multi_join"
+    ]
+  },
+  {
+    "id": "train-7864",
+    "db_id": "scholar",
+    "question": "what year had the most NIPS papers ?",
+    "vi_question": "Năm nào có nhiều bài báo NIPS (NeurIPS) nhất?",
+    "query": "SELECT DISTINCT COUNT ( t1.paperid )  ,  t1.year FROM venue AS t2 JOIN paper AS t1 ON t2.venueid  =  t1.venueid WHERE t2.venuename  =  \"NIPS\" GROUP BY t1.year ORDER BY COUNT ( t1.paperid ) DESC;",
+    "hardness": "hard",
+    "patterns": [
+      "group_by",
+      "where",
+      "join",
+      "agg_count",
+      "select_column",
+      "order_by"
+    ]
+  },
+  {
+    "id": "train-8614",
+    "db_id": "restaurants",
+    "question": "give me the best american restaurant in the bay area ?",
+    "vi_question": "Hãy cho biết nhà hàng Mỹ nào tốt nhất ở khu vực vùng vịnh?",
+    "query": "SELECT t3.house_number  ,  t1.name FROM restaurant AS t1 JOIN geographic AS t2 ON t1.city_name  =  t2.city_name JOIN LOCATION AS t3 ON t1.id  =  t3.restaurant_id WHERE t2.region  =  \"bay area\" AND t1.food_type  =  \"american\" AND t1.rating  =  ( SELECT MAX ( t1.rating ) FROM restaurant AS t1 JOIN geographic AS t2 ON t1.city_name  =  t2.city_name WHERE t2.region  =  \"bay area\" AND t1.food_type  =  \"american\" );",
+    "hardness": "extra_hard",
+    "patterns": [
+      "where",
+      "join",
+      "nested_subquery",
+      "select_column",
+      "multi_join"
+    ]
+  },
+  {
+    "id": "train-5224",
+    "db_id": "music_2",
+    "question": "What is the type of vocals that the band member with the last name \"Heilo\" played the most?",
+    "vi_question": "Loại giọng hát nào mà thành viên ban nhạc có họ \"Heilo\" thể hiện nhiều nhất?",
+    "query": "SELECT TYPE FROM vocals AS T1 JOIN band AS T2 ON T1.bandmate  =  T2.id WHERE lastname  =  \"Heilo\" GROUP BY TYPE ORDER BY count(*) DESC LIMIT 1",
+    "hardness": "hard",
+    "patterns": [
+      "group_by",
+      "where",
+      "join",
+      "select_column",
+      "limit",
+      "order_by"
+    ]
+  },
+  {
+    "id": "train-7994",
+    "db_id": "scholar",
+    "question": "When was benjamin mako hill 's first publication ?",
+    "vi_question": "Khi nào ấn phẩm đầu tiên của Benjamin Mako Hill được xuất bản?",
+    "query": "SELECT DISTINCT COUNT ( t3.paperid )  ,  t3.year FROM writes AS t2 JOIN author AS t1 ON t2.authorid  =  t1.authorid JOIN paper AS t3 ON t2.paperid  =  t3.paperid WHERE t1.authorname  =  \"benjamin mako hill\" GROUP BY t3.year ORDER BY t3.year;",
+    "hardness": "hard",
+    "patterns": [
+      "group_by",
+      "where",
+      "join",
+      "agg_count",
+      "select_column",
+      "order_by",
+      "multi_join"
+    ]
+  },
+  {
+    "id": "train-5386",
+    "db_id": "tracking_software_problems",
+    "question": "Which problems were reported by the staff named Dameon Frami or Jolie Weber? Give me the ids of the problems.",
+    "vi_question": "Những vấn đề nào được báo cáo bởi nhân viên có tên Dameon Frami hoặc Jolie Weber? Trả về problem_id.",
+    "query": "SELECT product_id FROM problems AS T1 JOIN staff AS T2 ON T1.reported_by_staff_id = T2.staff_id WHERE T2.staff_first_name = \"Dameon\" AND T2.staff_last_name = \"Frami\" UNION SELECT product_id FROM problems AS T1 JOIN staff AS T2 ON T1.reported_by_staff_id = T2.staff_id WHERE T2.staff_first_name = \"Jolie\" AND T2.staff_last_name = \"Weber\"",
+    "hardness": "extra_hard",
+    "patterns": [
+      "where",
+      "select_column",
+      "join",
+      "union"
+    ]
+  }
+]

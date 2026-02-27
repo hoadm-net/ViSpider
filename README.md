@@ -22,16 +22,17 @@ Build high-quality seed dataset through manual translation:
 
 **Output**: Gold standard human-translated dataset
 
-### Step 2: GPT Expansion 🔄
-**Status**: Planned
+### Step 2: GPT Expansion ✅
+**Status**: Implementation Complete
 
 Expand dataset using GPT with few-shot prompting:
-- Use gold seed as few-shot examples for context
-- Prompt constraints: preserve SQL logic, maintain literals, avoid paraphrasing
-- Quality gates: LaBSE similarity ≥ 0.75 + operator consistency checks
-- Manual review of sampled outputs
+- Intra-class diversity: 3 diverse examples with same SQL pattern
+- Real-time validation: LaBSE ≥ 0.75 + operator keywords
+- Retry logic: Different examples if validation fails (max 3 attempts)
+- Checkpoint every 100 samples for recovery
+- Target: 3,000 samples with pattern coverage
 
-**Output**: GPT-translated synthetic dataset (filtered)
+**Output**: GPT-translated dataset with validation (~3,000 samples)
 
 ### Step 3: Dataset Assembly 🔄
 **Status**: Planned
@@ -99,6 +100,7 @@ ViSpider/
 │   └── model_translations/       # Step 6: Hybrid scaling output
 │
 ├── scripts/
+│   ├── phase0_prepare/           # Step 0: Data extraction
 │   ├── phase1_manual/            # Step 1: Manual translation pipeline
 │   ├── phase2_chatgpt/           # Step 2: GPT translation
 │   ├── phase3_finetune/          # Steps 4-7: Model training & scaling
@@ -141,19 +143,19 @@ pip install -r requirements.txt
 ### Step 1: Manual Translation Pipeline
 
 ```bash
+# Phase 1: Manual Translation
 cd scripts/phase1_manual
-
-# 1. Parse Label Studio annotations
 python3 01_parse_label_studio.py
-
-# 2. Compute embeddings and quality scores
 python3 02_compute_embeddings.py
-
-# 2b. Extract SQL patterns (rule-based validation)
 python3 02b_extract_sql_patterns.py
-
-# 3. Analyze translation quality distribution
 python3 03_analyze_quality.py
+python3 04_extract_low_quality.py
+python3 05_filter_by_quality.py
+
+# Phase 2: GPT Expansion
+cd scripts/phase2_chatgpt
+python3 01_select_samples_for_gpt.py -n 3000
+python3 02_translate_with_validation.py
 
 # 4. Extract low-quality samples for review
 python3 04_extract_low_quality.py

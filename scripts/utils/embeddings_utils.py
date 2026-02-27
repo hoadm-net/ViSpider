@@ -1,12 +1,56 @@
 #!/usr/bin/env python3
 """
 Embeddings Utilities
-Helper functions to load and work with saved embeddings.
+Helper functions to load and work with saved embeddings,
+and compute new embeddings using LaBSE model.
 """
 
 import json
 import numpy as np
 from typing import Dict, List, Tuple
+
+# LaBSE model - lazy loaded on first use
+_labse_model = None
+LABSE_MODEL_NAME = 'sentence-transformers/LaBSE'
+
+
+def get_labse_model():
+    """Lazy-load LaBSE model (singleton)."""
+    global _labse_model
+    if _labse_model is None:
+        from sentence_transformers import SentenceTransformer
+        print(f"Loading LaBSE model: {LABSE_MODEL_NAME}")
+        _labse_model = SentenceTransformer(LABSE_MODEL_NAME)
+        print("✓ LaBSE model loaded")
+    return _labse_model
+
+
+def compute_embeddings(texts: List[str]) -> np.ndarray:
+    """
+    Compute LaBSE embeddings for a list of texts.
+    
+    Args:
+        texts: List of strings to embed
+        
+    Returns:
+        numpy array of shape (len(texts), embedding_dim)
+    """
+    model = get_labse_model()
+    embeddings = model.encode(texts, convert_to_numpy=True, show_progress_bar=False)
+    # Normalize for cosine similarity
+    norms = np.linalg.norm(embeddings, axis=1, keepdims=True)
+    return embeddings / norms
+
+
+def compute_similarity(text1: str, text2: str) -> float:
+    """
+    Compute cosine similarity between two texts using LaBSE.
+    
+    Returns:
+        float in [-1, 1], higher is more similar
+    """
+    embeddings = compute_embeddings([text1, text2])
+    return float(np.dot(embeddings[0], embeddings[1]))
 
 
 def load_embeddings(embeddings_file: str = "vispider_embeddings.json") -> Dict:

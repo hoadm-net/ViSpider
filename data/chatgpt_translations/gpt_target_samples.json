@@ -1,0 +1,218 @@
+[
+  {
+    "id": "train-1332",
+    "db_id": "college_2",
+    "question": "What is the department name and corresponding building for the department with the greatest budget?",
+    "query": "SELECT dept_name ,  building FROM department ORDER BY budget DESC LIMIT 1",
+    "hardness": "unknown",
+    "sql_patterns": [
+      "SELECT",
+      "FROM"
+    ]
+  },
+  {
+    "id": "train-0302",
+    "db_id": "product_catalog",
+    "question": "Find the names of all the catalog entries.",
+    "query": "SELECT distinct(catalog_entry_name) FROM catalog_contents",
+    "hardness": "unknown",
+    "sql_patterns": [
+      "SELECT",
+      "FROM"
+    ]
+  },
+  {
+    "id": "train-8139",
+    "db_id": "yelp",
+    "question": "Find the cities of businesses rated below 1.5",
+    "query": "SELECT city FROM business WHERE rating  <  1.5;",
+    "hardness": "unknown",
+    "sql_patterns": [
+      "WHERE"
+    ]
+  },
+  {
+    "id": "train-5743",
+    "db_id": "dorm_1",
+    "question": "Find the first name of students who are living in the Smith Hall.",
+    "query": "SELECT T1.fname FROM student AS T1 JOIN lives_in AS T2 ON T1.stuid  =  T2.stuid JOIN dorm AS T3 ON T3.dormid  =  T2.dormid WHERE T3.dorm_name  =  'Smith Hall'",
+    "hardness": "unknown",
+    "sql_patterns": [
+      "JOIN",
+      "WHERE"
+    ]
+  },
+  {
+    "id": "train-2582",
+    "db_id": "inn_1",
+    "question": "Find the number of times ROY SWEAZY has reserved a room.",
+    "query": "SELECT count(*) FROM Reservations WHERE FirstName = \"ROY\" AND LastName  =  \"SWEAZY\";",
+    "hardness": "unknown",
+    "sql_patterns": [
+      "COUNT",
+      "WHERE"
+    ]
+  },
+  {
+    "id": "train-3553",
+    "db_id": "music_1",
+    "question": "Find the file format that is used by the most files.",
+    "query": "SELECT formats FROM files GROUP BY formats ORDER BY COUNT (*) DESC LIMIT 1",
+    "hardness": "unknown",
+    "sql_patterns": [
+      "GROUP_BY"
+    ]
+  },
+  {
+    "id": "train-1746",
+    "db_id": "gymnast",
+    "question": "Return the names of people, ordered alphabetically.",
+    "query": "SELECT Name FROM People ORDER BY Name ASC",
+    "hardness": "unknown",
+    "sql_patterns": [
+      "SELECT",
+      "FROM"
+    ]
+  },
+  {
+    "id": "train-7841",
+    "db_id": "scholar",
+    "question": "How many papers were at nature communications 2015 ?",
+    "query": "SELECT DISTINCT COUNT ( t1.paperid ) FROM venue AS t2 JOIN paper AS t1 ON t2.venueid  =  t1.venueid WHERE t1.year  =  2015 AND t2.venuename  =  \"nature communications\";",
+    "hardness": "unknown",
+    "sql_patterns": [
+      "JOIN",
+      "WHERE"
+    ]
+  },
+  {
+    "id": "train-1230",
+    "db_id": "apartment_rentals",
+    "question": "Which apartments have bookings with status code \"Confirmed\"? Return their apartment numbers.",
+    "query": "SELECT DISTINCT T2.apt_number FROM Apartment_Bookings AS T1 JOIN Apartments AS T2 ON T1.apt_id  =  T2.apt_id WHERE T1.booking_status_code  =  \"Confirmed\"",
+    "hardness": "unknown",
+    "sql_patterns": [
+      "JOIN",
+      "WHERE"
+    ]
+  },
+  {
+    "id": "train-7304",
+    "db_id": "geo",
+    "question": "what city has the largest population",
+    "query": "SELECT city_name FROM city WHERE population  =  ( SELECT MAX ( population ) FROM city );",
+    "hardness": "unknown",
+    "sql_patterns": [
+      "WHERE"
+    ]
+  },
+  {
+    "id": "train-7881",
+    "db_id": "scholar",
+    "question": "what datasets did jitendra malik use ?",
+    "query": "SELECT DISTINCT t2.datasetid FROM paper AS t3 JOIN paperdataset AS t2 ON t3.paperid  =  t2.paperid JOIN writes AS t4 ON t4.paperid  =  t3.paperid JOIN author AS t1 ON t4.authorid  =  t1.authorid WHERE t1.authorname  =  \"jitendra malik\";",
+    "hardness": "unknown",
+    "sql_patterns": [
+      "JOIN",
+      "WHERE"
+    ]
+  },
+  {
+    "id": "train-6068",
+    "db_id": "customers_and_addresses",
+    "question": "What are the names of customers using the most popular payment method?",
+    "query": "SELECT customer_name FROM customers WHERE payment_method  =  (SELECT payment_method FROM customers GROUP BY payment_method ORDER BY count(*) DESC LIMIT 1)",
+    "hardness": "unknown",
+    "sql_patterns": [
+      "COUNT",
+      "GROUP_BY",
+      "WHERE"
+    ]
+  },
+  {
+    "id": "train-1056",
+    "db_id": "match_season",
+    "question": "What are the names and capitals of each country?",
+    "query": "SELECT Country_name ,  Capital FROM country",
+    "hardness": "unknown",
+    "sql_patterns": [
+      "SELECT",
+      "FROM"
+    ]
+  },
+  {
+    "id": "train-6517",
+    "db_id": "scientist_1",
+    "question": "What is the name of the project that requires the fewest number of hours, and the names of the scientists assigned to it?",
+    "query": "SELECT T2.name ,  T3.name FROM assignedto AS T1 JOIN projects AS T2 ON T1.project  =  T2.code JOIN scientists AS T3 ON T1.scientist  =  T3.SSN WHERE T2.hours  =  (SELECT min(hours) FROM projects)",
+    "hardness": "unknown",
+    "sql_patterns": [
+      "JOIN",
+      "WHERE"
+    ]
+  },
+  {
+    "id": "train-4871",
+    "db_id": "school_player",
+    "question": "What are the teams of the players, sorted in ascending alphabetical order?",
+    "query": "SELECT Team FROM player ORDER BY Team ASC",
+    "hardness": "unknown",
+    "sql_patterns": [
+      "SELECT",
+      "FROM"
+    ]
+  },
+  {
+    "id": "train-0396",
+    "db_id": "flight_1",
+    "question": "Show origin and destination for flights with price higher than 300.",
+    "query": "SELECT origin ,  destination FROM Flight WHERE price  >  300",
+    "hardness": "unknown",
+    "sql_patterns": [
+      "WHERE"
+    ]
+  },
+  {
+    "id": "train-0377",
+    "db_id": "flight_1",
+    "question": "What is the name of the 3 employees who get paid the least?",
+    "query": "SELECT name FROM Employee ORDER BY salary ASC LIMIT 3",
+    "hardness": "unknown",
+    "sql_patterns": [
+      "SELECT",
+      "FROM"
+    ]
+  },
+  {
+    "id": "train-1129",
+    "db_id": "climbing",
+    "question": "Show names of climbers and the names of mountains they climb.",
+    "query": "SELECT T1.Name ,  T2.Name FROM climber AS T1 JOIN mountain AS T2 ON T1.Mountain_ID  =  T2.Mountain_ID",
+    "hardness": "unknown",
+    "sql_patterns": [
+      "JOIN"
+    ]
+  },
+  {
+    "id": "train-2742",
+    "db_id": "election",
+    "question": "What are the maximum and minimum population of the counties?",
+    "query": "SELECT max(Population) ,  min(Population) FROM county",
+    "hardness": "unknown",
+    "sql_patterns": [
+      "SELECT",
+      "FROM"
+    ]
+  },
+  {
+    "id": "train-2892",
+    "db_id": "icfp_1",
+    "question": "Which papers did the author \"Olin Shivers\" write? Give me the paper titles.",
+    "query": "SELECT t3.title FROM authors AS t1 JOIN authorship AS t2 ON t1.authid  =  t2.authid JOIN papers AS t3 ON t2.paperid  =  t3.paperid WHERE t1.fname  =  \"Olin\" AND t1.lname  =  \"Shivers\"",
+    "hardness": "unknown",
+    "sql_patterns": [
+      "JOIN",
+      "WHERE"
+    ]
+  }
+]

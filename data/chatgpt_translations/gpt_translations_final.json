@@ -1,0 +1,411 @@
+[
+  {
+    "id": "train-1332",
+    "db_id": "college_2",
+    "question": "What is the department name and corresponding building for the department with the greatest budget?",
+    "query": "SELECT dept_name ,  building FROM department ORDER BY budget DESC LIMIT 1",
+    "hardness": "unknown",
+    "sql_patterns": [
+      "SELECT",
+      "FROM"
+    ],
+    "vi_question": "Tên dept_name và building tương ứng của department có budget lớn nhất là gì?",
+    "labse_similarity": 0.8497653007507324,
+    "operator_validation": {
+      "is_valid": true,
+      "missing_operators": []
+    },
+    "fewshot_examples_used": [
+      "train-6205",
+      "train-7633",
+      "train-6296"
+    ],
+    "attempts": 1
+  },
+  {
+    "id": "train-0302",
+    "db_id": "product_catalog",
+    "question": "Find the names of all the catalog entries.",
+    "query": "SELECT distinct(catalog_entry_name) FROM catalog_contents",
+    "hardness": "unknown",
+    "sql_patterns": [
+      "SELECT",
+      "FROM"
+    ],
+    "vi_question": "Lấy tên của tất cả các mục trong catalog",
+    "labse_similarity": 0.7989065051078796,
+    "operator_validation": {
+      "is_valid": true,
+      "missing_operators": []
+    },
+    "fewshot_examples_used": [
+      "train-5236",
+      "train-8406",
+      "train-0922"
+    ],
+    "attempts": 1
+  },
+  {
+    "id": "train-8139",
+    "db_id": "yelp",
+    "question": "Find the cities of businesses rated below 1.5",
+    "query": "SELECT city FROM business WHERE rating  <  1.5;",
+    "hardness": "unknown",
+    "sql_patterns": [
+      "WHERE"
+    ],
+    "vi_question": "Các thành phố của các business có rating dưới 1.5",
+    "labse_similarity": 0.8590987920761108,
+    "operator_validation": {
+      "is_valid": true,
+      "missing_operators": []
+    },
+    "fewshot_examples_used": [
+      "train-7975",
+      "train-4105",
+      "train-1820"
+    ],
+    "attempts": 1
+  },
+  {
+    "id": "train-5743",
+    "db_id": "dorm_1",
+    "question": "Find the first name of students who are living in the Smith Hall.",
+    "query": "SELECT T1.fname FROM student AS T1 JOIN lives_in AS T2 ON T1.stuid  =  T2.stuid JOIN dorm AS T3 ON T3.dormid  =  T2.dormid WHERE T3.dorm_name  =  'Smith Hall'",
+    "hardness": "unknown",
+    "sql_patterns": [
+      "JOIN",
+      "WHERE"
+    ],
+    "vi_question": "Tìm first name của các sinh viên đang sống ở Smith Hall.",
+    "labse_similarity": 0.8440181612968445,
+    "operator_validation": {
+      "is_valid": true,
+      "missing_operators": []
+    },
+    "fewshot_examples_used": [
+      "train-1403",
+      "train-7593",
+      "train-5774"
+    ],
+    "attempts": 1
+  },
+  {
+    "id": "train-2582",
+    "db_id": "inn_1",
+    "question": "Find the number of times ROY SWEAZY has reserved a room.",
+    "query": "SELECT count(*) FROM Reservations WHERE FirstName = \"ROY\" AND LastName  =  \"SWEAZY\";",
+    "hardness": "unknown",
+    "sql_patterns": [
+      "COUNT",
+      "WHERE"
+    ],
+    "vi_question": "Số lần ROY SWEAZY đã đặt phòng là bao nhiêu?",
+    "labse_similarity": 0.8040873408317566,
+    "operator_validation": {
+      "is_valid": true,
+      "missing_operators": []
+    },
+    "fewshot_examples_used": [
+      "train-2966",
+      "train-1118",
+      "train-7633"
+    ],
+    "attempts": 1
+  },
+  {
+    "id": "train-3553",
+    "db_id": "music_1",
+    "question": "Find the file format that is used by the most files.",
+    "query": "SELECT formats FROM files GROUP BY formats ORDER BY COUNT (*) DESC LIMIT 1",
+    "hardness": "unknown",
+    "sql_patterns": [
+      "GROUP_BY"
+    ],
+    "vi_question": "Tìm định dạng file (formats) được sử dụng bởi nhiều files nhất.",
+    "labse_similarity": 0.8584649562835693,
+    "operator_validation": {
+      "is_valid": true,
+      "missing_operators": []
+    },
+    "fewshot_examples_used": [
+      "train-4790",
+      "train-7932",
+      "train-0962"
+    ],
+    "attempts": 1
+  },
+  {
+    "id": "train-1746",
+    "db_id": "gymnast",
+    "question": "Return the names of people, ordered alphabetically.",
+    "query": "SELECT Name FROM People ORDER BY Name ASC",
+    "hardness": "unknown",
+    "sql_patterns": [
+      "SELECT",
+      "FROM"
+    ],
+    "vi_question": "Trả về các giá trị Name của bảng People, sắp xếp theo thứ tự chữ cái.",
+    "labse_similarity": 0.750182032585144,
+    "operator_validation": {
+      "is_valid": true,
+      "missing_operators": []
+    },
+    "fewshot_examples_used": [
+      "train-3255",
+      "train-1137",
+      "train-8129"
+    ],
+    "attempts": 1
+  },
+  {
+    "id": "train-7841",
+    "db_id": "scholar",
+    "question": "How many papers were at nature communications 2015 ?",
+    "query": "SELECT DISTINCT COUNT ( t1.paperid ) FROM venue AS t2 JOIN paper AS t1 ON t2.venueid  =  t1.venueid WHERE t1.year  =  2015 AND t2.venuename  =  \"nature communications\";",
+    "hardness": "unknown",
+    "sql_patterns": [
+      "JOIN",
+      "WHERE"
+    ],
+    "vi_question": "Có bao nhiêu bài báo tại nature communications năm 2015?",
+    "labse_similarity": 0.8986513614654541,
+    "operator_validation": {
+      "is_valid": true,
+      "missing_operators": []
+    },
+    "fewshot_examples_used": [
+      "train-1049",
+      "train-7896",
+      "train-8619"
+    ],
+    "attempts": 1
+  },
+  {
+    "id": "train-7304",
+    "db_id": "geo",
+    "question": "what city has the largest population",
+    "query": "SELECT city_name FROM city WHERE population  =  ( SELECT MAX ( population ) FROM city );",
+    "hardness": "unknown",
+    "sql_patterns": [
+      "WHERE"
+    ],
+    "vi_question": "Thành phố nào có population lớn nhất",
+    "labse_similarity": 0.9515780210494995,
+    "operator_validation": {
+      "is_valid": true,
+      "missing_operators": []
+    },
+    "fewshot_examples_used": [
+      "train-7925",
+      "train-5930",
+      "train-4106"
+    ],
+    "attempts": 1
+  },
+  {
+    "id": "train-7881",
+    "db_id": "scholar",
+    "question": "what datasets did jitendra malik use ?",
+    "query": "SELECT DISTINCT t2.datasetid FROM paper AS t3 JOIN paperdataset AS t2 ON t3.paperid  =  t2.paperid JOIN writes AS t4 ON t4.paperid  =  t3.paperid JOIN author AS t1 ON t4.authorid  =  t1.authorid WHERE t1.authorname  =  \"jitendra malik\";",
+    "hardness": "unknown",
+    "sql_patterns": [
+      "JOIN",
+      "WHERE"
+    ],
+    "vi_question": "jitendra malik đã sử dụng những datasets nào?",
+    "labse_similarity": 0.907700777053833,
+    "operator_validation": {
+      "is_valid": true,
+      "missing_operators": []
+    },
+    "fewshot_examples_used": [
+      "train-2836",
+      "train-8479",
+      "train-2019"
+    ],
+    "attempts": 1
+  },
+  {
+    "id": "train-1056",
+    "db_id": "match_season",
+    "question": "What are the names and capitals of each country?",
+    "query": "SELECT Country_name ,  Capital FROM country",
+    "hardness": "unknown",
+    "sql_patterns": [
+      "SELECT",
+      "FROM"
+    ],
+    "vi_question": "Tên (Country_name) và thủ đô (Capital) của mỗi country là gì?",
+    "labse_similarity": 0.8436772227287292,
+    "operator_validation": {
+      "is_valid": true,
+      "missing_operators": []
+    },
+    "fewshot_examples_used": [
+      "train-1317",
+      "train-7633",
+      "train-1438"
+    ],
+    "attempts": 1
+  },
+  {
+    "id": "train-6517",
+    "db_id": "scientist_1",
+    "question": "What is the name of the project that requires the fewest number of hours, and the names of the scientists assigned to it?",
+    "query": "SELECT T2.name ,  T3.name FROM assignedto AS T1 JOIN projects AS T2 ON T1.project  =  T2.code JOIN scientists AS T3 ON T1.scientist  =  T3.SSN WHERE T2.hours  =  (SELECT min(hours) FROM projects)",
+    "hardness": "unknown",
+    "sql_patterns": [
+      "JOIN",
+      "WHERE"
+    ],
+    "vi_question": "Tên của project yêu cầu số hours ít nhất là gì và tên các scientists được giao vào project đó?",
+    "labse_similarity": 0.8047061562538147,
+    "operator_validation": {
+      "is_valid": true,
+      "missing_operators": []
+    },
+    "fewshot_examples_used": [
+      "train-4384",
+      "train-8433",
+      "train-7726"
+    ],
+    "attempts": 1
+  },
+  {
+    "id": "train-4871",
+    "db_id": "school_player",
+    "question": "What are the teams of the players, sorted in ascending alphabetical order?",
+    "query": "SELECT Team FROM player ORDER BY Team ASC",
+    "hardness": "unknown",
+    "sql_patterns": [
+      "SELECT",
+      "FROM"
+    ],
+    "vi_question": "Các giá trị Team của bảng player, sắp xếp theo thứ tự chữ cái tăng dần là gì?",
+    "labse_similarity": 0.7652146816253662,
+    "operator_validation": {
+      "is_valid": true,
+      "missing_operators": []
+    },
+    "fewshot_examples_used": [
+      "train-2575",
+      "train-8532",
+      "train-7975"
+    ],
+    "attempts": 2
+  },
+  {
+    "id": "train-0396",
+    "db_id": "flight_1",
+    "question": "Show origin and destination for flights with price higher than 300.",
+    "query": "SELECT origin ,  destination FROM Flight WHERE price  >  300",
+    "hardness": "unknown",
+    "sql_patterns": [
+      "WHERE"
+    ],
+    "vi_question": "Hiển thị origin và destination của các bản ghi trong Flight có price lớn hơn 300.",
+    "labse_similarity": 0.8639039397239685,
+    "operator_validation": {
+      "is_valid": true,
+      "missing_operators": []
+    },
+    "fewshot_examples_used": [
+      "train-0632",
+      "train-7745",
+      "train-0565"
+    ],
+    "attempts": 1
+  },
+  {
+    "id": "train-0377",
+    "db_id": "flight_1",
+    "question": "What is the name of the 3 employees who get paid the least?",
+    "query": "SELECT name FROM Employee ORDER BY salary ASC LIMIT 3",
+    "hardness": "unknown",
+    "sql_patterns": [
+      "SELECT",
+      "FROM"
+    ],
+    "vi_question": "Tên của 3 nhân viên được trả lương thấp nhất là gì?",
+    "labse_similarity": 0.8908657431602478,
+    "operator_validation": {
+      "is_valid": true,
+      "missing_operators": []
+    },
+    "fewshot_examples_used": [
+      "train-3852",
+      "train-5754",
+      "train-7593"
+    ],
+    "attempts": 1
+  },
+  {
+    "id": "train-1129",
+    "db_id": "climbing",
+    "question": "Show names of climbers and the names of mountains they climb.",
+    "query": "SELECT T1.Name ,  T2.Name FROM climber AS T1 JOIN mountain AS T2 ON T1.Mountain_ID  =  T2.Mountain_ID",
+    "hardness": "unknown",
+    "sql_patterns": [
+      "JOIN"
+    ],
+    "vi_question": "Hiển thị tên các vận động viên leo núi và tên các ngọn núi mà họ leo.",
+    "labse_similarity": 0.841346263885498,
+    "operator_validation": {
+      "is_valid": true,
+      "missing_operators": []
+    },
+    "fewshot_examples_used": [
+      "train-1622",
+      "train-7896",
+      "train-1764"
+    ],
+    "attempts": 1
+  },
+  {
+    "id": "train-2742",
+    "db_id": "election",
+    "question": "What are the maximum and minimum population of the counties?",
+    "query": "SELECT max(Population) ,  min(Population) FROM county",
+    "hardness": "unknown",
+    "sql_patterns": [
+      "SELECT",
+      "FROM"
+    ],
+    "vi_question": "Dân số tối đa và tối thiểu của các counties là bao nhiêu?",
+    "labse_similarity": 0.9163389205932617,
+    "operator_validation": {
+      "is_valid": true,
+      "missing_operators": []
+    },
+    "fewshot_examples_used": [
+      "train-0777",
+      "train-7594",
+      "train-2595"
+    ],
+    "attempts": 1
+  },
+  {
+    "id": "train-2892",
+    "db_id": "icfp_1",
+    "question": "Which papers did the author \"Olin Shivers\" write? Give me the paper titles.",
+    "query": "SELECT t3.title FROM authors AS t1 JOIN authorship AS t2 ON t1.authid  =  t2.authid JOIN papers AS t3 ON t2.paperid  =  t3.paperid WHERE t1.fname  =  \"Olin\" AND t1.lname  =  \"Shivers\"",
+    "hardness": "unknown",
+    "sql_patterns": [
+      "JOIN",
+      "WHERE"
+    ],
+    "vi_question": "Những bài báo nào do tác giả \"Olin Shivers\" viết? Cho tôi tiêu đề của các bài báo.",
+    "labse_similarity": 0.849352240562439,
+    "operator_validation": {
+      "is_valid": true,
+      "missing_operators": []
+    },
+    "fewshot_examples_used": [
+      "train-0986",
+      "train-7633",
+      "train-5933"
+    ],
+    "attempts": 1
+  }
+]

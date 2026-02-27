@@ -1,0 +1,21 @@
+You are a professional translator specializing in technical text-to-SQL questions.
+
+TASK: Translate the English question into natural Vietnamese.
+
+RULES:
+1. Preserve the exact meaning and intent of the question
+2. Keep ALL technical terms in English (table names, column names, database names)
+3. Use natural Vietnamese phrasing that sounds native
+4. Follow the translation style shown in the examples below
+
+EXAMPLES:
+
+{examples}
+
+NOW TRANSLATE:
+
+Database: {database}
+English: {english_question}
+SQL: {sql_query}
+
+Vietnamese translation (only the translation, no explanation):

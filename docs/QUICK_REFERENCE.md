@@ -7,13 +7,14 @@ ViSpider/
 ├── data/
 │   ├── raw/                          # Original Spider dataset
 │   ├── manual_translations/          # Phase 1: Manual translations
-│   ├── chatgpt_translations/         # Phase 2: ChatGPT translations (planned)
+│   ├── chatgpt_translations/         # Phase 2: GPT translations
 │   └── model_translations/           # Phase 3: Fine-tuned model (planned)
 │
 ├── scripts/
-│   ├── phase1_manual/                # Phase 1 pipeline scripts
-│   ├── phase2_chatgpt/               # Phase 2 scripts (planned)
-│   ├── phase3_finetune/              # Phase 3 scripts (planned)
+│   ├── phase0_prepare/               # Phase 0: Data extraction
+│   ├── phase1_manual/                # Phase 1: Manual translation pipeline
+│   ├── phase2_chatgpt/               # Phase 2: GPT translation
+│   ├── phase3_finetune/              # Phase 3: Model training (planned)
 │   └── utils/                        # Shared utilities
 │
 ├── results/                          # Analysis outputs (gitignored)
@@ -26,12 +27,21 @@ ViSpider/
 └── docs/                             # Documentation
 ```
 
+## Phase 0 Scripts
+
+Data extraction from raw Spider format:
+
+| Script | Purpose |
+|--------|---------|  
+| `00_extract_spider_data.py` | Extract and simplify Spider data (raw → extracted) |
+
 ## Phase 1 Scripts
 
 Run from `scripts/phase1_manual/` directory:
 
 | Script | Purpose |
 |--------|---------|
+
 | `01_parse_label_studio.py` | Parse Label Studio export to ViSpider format |
 | `02_compute_embeddings.py` | Generate LaBSE embeddings and similarities |
 | `02b_extract_sql_patterns.py` | Extract SQL patterns (rule-based validation) |
@@ -40,9 +50,30 @@ Run from `scripts/phase1_manual/` directory:
 | `05_filter_by_quality.py` | Create filtered high-quality dataset |
 | `06_review_samples.py` | Display samples for manual review |
 
+## Phase 2 Scripts
+
+Run from `scripts/phase2_chatgpt/` directory:
+
+| Script | Purpose |
+|--------|---------|  
+| `01_select_samples_for_gpt.py` | Select N samples with pattern coverage (`-n` flag, default 3000) |
+| `02_translate_with_validation.py` | Translate with GPT + real-time validation |
+
 ## Common Commands
 
-### Run Full Pipeline
+### Run Phase 2 Pipeline
+```bash
+cd /home/hoadm/ViSpider
+source venv/bin/activate
+
+# Step 1: Select samples (adjust -n as needed)
+python3 scripts/phase2_chatgpt/01_select_samples_for_gpt.py -n 3000
+
+# Step 2: Translate with validation (~7-8 sec/sample)
+python3 scripts/phase2_chatgpt/02_translate_with_validation.py
+```
+
+### Run Full Phase 1 Pipeline
 ```bash
 cd scripts/phase1_manual
 python3 01_parse_label_studio.py
@@ -84,6 +115,13 @@ python3 06_review_samples.py --difficulty hard
 - `similarity_analysis.json` - Quality analysis results
 - `vispider_low_quality_samples.json` - Flagged samples
 - `vispider_train_filtered_75.json` - High-quality filtered set
+
+### Phase 2 Output Files
+- `gpt_target_samples.json` - Selected samples for translation
+- `gpt_translations_final.json` - Successfully translated samples
+- `gpt_translations_checkpoint_*.json` - Progress checkpoints
+- `results/quality_analysis/gpt_validation_report.json` - Quality metrics
+- `results/quality_analysis/gpt_failed_samples.json` - Failed samples
 
 ## Quality Interpretation
 
