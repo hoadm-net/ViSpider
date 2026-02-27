@@ -5,24 +5,39 @@
 ```
 ViSpider/
 ├── data/
-│   ├── raw/                          # Original Spider dataset
-│   ├── extracted/                    # Simplified extraction of raw data
-│   ├── manual_translations/          # Phase 2: Manual translations
-│   ├── chatgpt_translations/         # Phase 3: GPT translations
-│   ├── merged/                       # Phase 4.1: Train/dev/test split
-│   └── model_translations/           # Phase 4+: Fine-tuned model output
+│   ├── raw/                          # Original Spider dataset + SQLite databases
+│   ├── extracted/                    # Phase 1: Simplified extraction
+│   ├── manual_translations/          # Phase 2: Gold seed (human)
+│   ├── chatgpt_translations/         # Phase 3: GPT expansion
+│   ├── merged/                       # Phase 4: Train/dev/test split
+│   └── finetune_coder/               # Phase 5: Instruction-tuning JSONL (generated)
 │
 ├── scripts/
 │   ├── phase1_prepare/               # Phase 1: Data extraction
 │   ├── phase2_manual/                # Phase 2: Manual translation pipeline
 │   ├── phase3_chatgpt/               # Phase 3: GPT translation
 │   ├── phase4_finetune/              # Phase 4: Dataset assembly & model training
-│   └── utils/                        # Shared utilities
+│   ├── phase5_evaluate/              # Phase 5: LaBSE eval + EN/VI text-to-SQL
+│   └── utils/                        # Shared utilities (schema, LaBSE, Spider eval)
 │
 ├── models/                           # Trained model weights (gitignored)
 ├── results/                          # Analysis outputs (gitignored)
 └── docs/                             # Documentation
 ```
+
+## Phase 5 Scripts
+
+Run from project root:
+
+| Script | Purpose |
+|--------|---------|
+| `01_labse_eval.py` | LaBSE similarity evaluation (dataset quality or model prediction) |
+| `02_visualize.py` | Generate plots from LaBSE evaluation JSON |
+| `03_prepare_data.py` | Convert ViSpider splits to instruction-tuning JSONL (EN + VI) |
+| `04_finetune_coder.py` | QLoRA fine-tune Qwen2.5-Coder on EN or VI data (`--lang en\|vi`) |
+| `05_predict_sql.py` | Run inference and save predicted SQL (`--lang`, `--split`) |
+| `06_execution_accuracy.py` | Compute Execution Accuracy against Spider SQLite databases |
+| `07_compare_en_vi.py` | Side-by-side EN vs VI EX comparison with plots |
 
 ## Phase 1 Scripts
 
@@ -38,7 +53,6 @@ Run from `scripts/phase2_manual/` directory:
 
 | Script | Purpose |
 |--------|---------|
-
 | `01_parse_label_studio.py` | Parse Label Studio export to ViSpider format |
 | `02_compute_embeddings.py` | Generate LaBSE embeddings and similarities |
 | `02b_extract_sql_patterns.py` | Extract SQL patterns (rule-based validation) |
@@ -86,6 +100,35 @@ python3 scripts/phase4_finetune/03_merge_adapter.py
 
 # Step 4: Evaluate on dev/test set
 python3 scripts/phase4_finetune/04_evaluate.py --split dev
+```
+
+### Run Phase 5 Pipeline
+```bash
+cd ViSpider
+source venv/bin/activate
+
+# Step 1: Prepare instruction-tuning data
+python3 scripts/phase5_evaluate/03_prepare_data.py
+
+# Step 2: Fine-tune EN and VI
+python3 scripts/phase5_evaluate/04_finetune_coder.py --lang en --epochs 5
+python3 scripts/phase5_evaluate/04_finetune_coder.py --lang vi --epochs 5
+
+# Step 3: Predict SQL (test split)
+python3 scripts/phase5_evaluate/05_predict_sql.py --lang en --split test
+python3 scripts/phase5_evaluate/05_predict_sql.py --lang vi --split test
+
+# Step 4: Compute Execution Accuracy
+python3 scripts/phase5_evaluate/06_execution_accuracy.py \
+    --pred-file results/phase5_evaluate/predictions_en_test.json
+python3 scripts/phase5_evaluate/06_execution_accuracy.py \
+    --pred-file results/phase5_evaluate/predictions_vi_test.json
+
+# Step 5: Compare and generate plots
+python3 scripts/phase5_evaluate/07_compare_en_vi.py \
+    --en results/phase5_evaluate/predictions_en_test_ex.json \
+    --vi results/phase5_evaluate/predictions_vi_test_ex.json \
+    --plot
 ```
 
 ### Run Full Phase 2 Pipeline

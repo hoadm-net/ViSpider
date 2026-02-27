@@ -1,8 +1,8 @@
-# Phase 3: Fine-tuning Workflow
+# Phase 4: Fine-tuning Workflow
 
 ## Overview
 
-Phase 3 merges the gold seed and GPT-translated data into a unified dataset, fine-tunes a translation model on it, and evaluates translation quality.
+Phase 4 merges the gold seed and GPT-translated data into a unified dataset, fine-tunes a translation model on it, and evaluates translation quality.
 
 ## Workflow Steps
 
