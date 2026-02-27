@@ -137,6 +137,8 @@ def parse_args():
     p.add_argument("--save-steps",  type=int,   default=100)
     p.add_argument("--eval-steps",  type=int,   default=100)
     p.add_argument("--logging-steps",type=int,  default=10)
+    p.add_argument("--max-steps",   type=int,   default=-1,
+                   help="Max training steps. -1 = use epochs. Set e.g. 10 for smoke test")
 
     # I/O
     p.add_argument("--output-dir",  default=str(OUTPUT_DIR))
@@ -212,7 +214,7 @@ def main():
         quantization_config=bnb_config,
         device_map="auto",
         trust_remote_code=True,
-        torch_dtype=torch.bfloat16 if args.no_quantize else None,
+        dtype=torch.bfloat16 if args.no_quantize else None,
     )
 
     if not args.no_quantize:
@@ -233,11 +235,25 @@ def main():
     print(f"\n  Trainable params: {trainable:,}  ({100 * trainable / total:.2f}% of {total:,})")
 
     # ── Training args ──────────────────────────────────────────────────────
+    # Align save_steps to be a round multiple of eval_steps
+    # (required by load_best_model_at_end)
+    eval_steps = args.eval_steps
+    save_steps = args.save_steps
+    if save_steps % eval_steps != 0:
+        save_steps = max(eval_steps, ((save_steps + eval_steps - 1) // eval_steps) * eval_steps)
+
+    # Warmup: convert ratio → steps (rough estimate using train size / batch)
+    effective_batch = args.batch_size * args.grad_accum
+    steps_per_epoch = max(1, len(train_dataset) // effective_batch)
+    total_steps = steps_per_epoch * args.epochs if args.max_steps < 0 else args.max_steps
+    warmup_steps = max(1, int(args.warmup_ratio * total_steps))
+
     training_args = SFTConfig(
         output_dir=str(output_dir),
 
         # Epochs & steps
         num_train_epochs=args.epochs,
+        max_steps=args.max_steps,          # -1 = disabled (use epochs); >0 overrides epochs
         per_device_train_batch_size=args.batch_size,
         per_device_eval_batch_size=args.batch_size,
         gradient_accumulation_steps=args.grad_accum,
@@ -246,7 +262,7 @@ def main():
         # Optimiser
         learning_rate=args.lr,
         lr_scheduler_type=args.lr_scheduler,
-        warmup_ratio=args.warmup_ratio,
+        warmup_steps=warmup_steps,
         weight_decay=args.weight_decay,
         optim="paged_adamw_8bit" if not args.no_quantize else "adamw_torch",
 
@@ -257,15 +273,15 @@ def main():
         # Logging / saving
         logging_steps=args.logging_steps,
         eval_strategy="steps",
-        eval_steps=args.eval_steps,
+        eval_steps=eval_steps,
         save_strategy="steps",
-        save_steps=args.save_steps,
+        save_steps=save_steps,
         save_total_limit=3,
         load_best_model_at_end=True,
         metric_for_best_model="eval_loss",
 
-        # SFT-specific
-        max_seq_length=args.max_length,
+        # SFT-specific  (trl ≥ 0.26: max_seq_length → max_length)
+        max_length=args.max_length,
         dataset_text_field="text",
         packing=False,                    # don't pack samples; each sample is independent
 

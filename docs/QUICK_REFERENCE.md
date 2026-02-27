@@ -6,6 +6,7 @@
 ViSpider/
 ├── data/
 │   ├── raw/                          # Original Spider dataset
+│   ├── extracted/                    # Simplified extraction of raw data
 │   ├── manual_translations/          # Phase 1: Manual translations
 │   ├── chatgpt_translations/         # Phase 2: GPT translations
 │   ├── merged/                       # Phase 3.1: Train/dev/test split
@@ -20,7 +21,6 @@ ViSpider/
 │
 ├── models/                           # Trained model weights (gitignored)
 ├── results/                          # Analysis outputs (gitignored)
-├── experiments/                      # Experimental code (gitignored)
 └── docs/                             # Documentation
 ```
 
@@ -43,7 +43,7 @@ Run from `scripts/phase1_manual/` directory:
 | `02_compute_embeddings.py` | Generate LaBSE embeddings and similarities |
 | `02b_extract_sql_patterns.py` | Extract SQL patterns (rule-based validation) |
 | `03_analyze_quality.py` | Analyze quality distribution |
-| `04_extract_low_quality.py` | Extract samples needing review (< 0.75) |
+| `04_extract_low_quality.py` | Extract samples below quality threshold for review |
 | `05_filter_by_quality.py` | Create filtered high-quality dataset |
 | `06_review_samples.py` | Display samples for manual review |
 
@@ -60,11 +60,11 @@ Run from `scripts/phase2_chatgpt/` directory:
 
 ### Run Phase 2 Pipeline
 ```bash
-cd /home/hoadm/ViSpider
+cd ViSpider
 source venv/bin/activate
 
-# Step 1: Select samples (adjust -n as needed)
-python3 scripts/phase2_chatgpt/01_select_samples_for_gpt.py -n 3000
+# Step 1: Select samples
+python3 scripts/phase2_chatgpt/01_select_samples_for_gpt.py
 
 # Step 2: Translate with validation (auto-loads gpt_target_samples.json)
 python3 scripts/phase2_chatgpt/02_translate_with_validation.py
@@ -72,14 +72,13 @@ python3 scripts/phase2_chatgpt/02_translate_with_validation.py
 
 ### Run Phase 3 Pipeline
 ```bash
-cd /home/hoadm/ViSpider
+cd ViSpider
 source venv/bin/activate
-pip install peft trl bitsandbytes accelerate  # first time only
 
-# Step 1: Merge & split (already done — data/merged/ exists)
+# Step 1: Merge & split
 python3 scripts/phase3_finetune/01_merge_and_split.py
 
-# Step 2: Fine-tune (requires GPU with ≥16 GB VRAM)
+# Step 2: Fine-tune (requires GPU)
 python3 scripts/phase3_finetune/02_finetune.py
 
 # Step 3: Merge adapter into standalone model
@@ -102,10 +101,10 @@ python3 04_extract_low_quality.py
 ### Custom Thresholds
 ```bash
 # Filter with custom threshold
-python3 05_filter_by_quality.py --threshold 0.80
+python3 05_filter_by_quality.py --threshold <value>
 
 # Extract low-quality with custom cutoff
-python3 04_extract_low_quality.py --threshold 0.70
+python3 04_extract_low_quality.py --threshold <value>
 ```
 
 ### Review Specific Samples
@@ -127,7 +126,7 @@ python3 06_review_samples.py --difficulty hard
 
 ### Phase 1 Output Files
 - `vispider_train_2000.json` - Parsed manual translations
-- `vispider_embeddings.json` - LaBSE embeddings (~25 MB)
+- `vispider_embeddings.json` - LaBSE embeddings
 - `similarity_analysis.json` - Quality analysis results
 - `vispider_low_quality_samples.json` - Flagged samples
 - `vispider_train_filtered_75.json` - High-quality filtered set
@@ -141,23 +140,13 @@ python3 06_review_samples.py --difficulty hard
 
 ### Phase 3 Output Files
 - `data/merged/vispider_all.json` - All merged samples
-- `data/merged/vispider_train.json` - Training split (80%)
-- `data/merged/vispider_dev.json` - Dev split (10%)
-- `data/merged/vispider_test.json` - Test split (10%)
+- `data/merged/vispider_train.json` - Training split
+- `data/merged/vispider_dev.json` - Dev split
+- `data/merged/vispider_test.json` - Test split
 - `data/merged/split_report.json` - Split statistics by source and hardness
 - `models/qwen25_vispider/final/` - Trained LoRA adapter (after fine-tuning)
 - `models/qwen25_vispider_merged/` - Merged standalone model (after 03_merge_adapter.py)
 - `results/quality_analysis/model_eval_dev.json` - Dev set evaluation results
-
-## Quality Interpretation
-
-| Similarity Range | Quality Level | Action |
-|-----------------|---------------|--------|
-| >= 0.85 | Excellent | Accept |
-| 0.75 - 0.85 | Good | Accept |
-| 0.65 - 0.75 | Acceptable | Review |
-| 0.50 - 0.65 | Poor | Re-translate |
-| < 0.50 | Very Poor | Re-translate |
 
 ## Environment Setup
 
@@ -175,11 +164,6 @@ pip install -r requirements.txt
 - `matplotlib` - Visualization
 - `tqdm` - Progress bars
 
-### GPU vs CPU
-- LaBSE works on both CPU and GPU
-- CPU: ~4 minutes for 2,000 samples
-- GPU: ~30 seconds for 2,000 samples
-
 ## Troubleshooting
 
 ### Import Errors
@@ -191,24 +175,12 @@ pip install -r requirements.txt
 ### Memory Issues
 ```bash
 # Reduce batch size in 02_compute_embeddings.py
-BATCH_SIZE = 16  # Default is 32
+# Edit BATCH_SIZE variable near the top of the script
 ```
 
 ### Corrupted Embeddings
 ```bash
 # Re-generate embeddings
-rm ../../data/manual_translations/vispider_embeddings.json
-python3 02_compute_embeddings.py
+rm data/manual_translations/vispider_embeddings.json
+python3 scripts/phase1_manual/02_compute_embeddings.py
 ```
-
-## Next Steps
-
-Phase 3 (current):
-1. Run `02_finetune.py` on GPU server
-2. Merge adapter with `03_merge_adapter.py`
-3. Evaluate with `04_evaluate.py --split dev`
-
-Phase 4+:
-4. **Pre-scaling gate**: Compare model vs GPT baseline — proceed only if quality threshold met
-5. **Full dataset translation**: Fine-tuned model translates remaining Spider samples with GPT fallback
-6. **Final QC**: LaBSE distribution, difficulty balance, dataset release

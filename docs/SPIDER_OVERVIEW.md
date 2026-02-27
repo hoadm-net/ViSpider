@@ -9,7 +9,7 @@ Spider is a large-scale text-to-SQL benchmark dataset for semantic parsing. It e
 ## Key Features
 
 ### Cross-Domain
-- 200+ databases across 138 different domains (academic, music, sports, business, healthcare, etc.)
+- Databases across many different domains (academic, music, sports, business, healthcare, etc.)
 - Train and test sets use completely different databases
 - Models must generalize to unseen database schemas
 
@@ -38,9 +38,9 @@ Each sample contains:
 
 ## Dataset Split
 
-- **Train**: ~8,600 questions from Spider + other datasets
-- **Dev**: ~1,000 questions (20 databases, different from train)
-- **Test**: ~2,100 questions (40 databases, held out for evaluation)
+- **Train**: Large set of questions from Spider and companion datasets
+- **Dev**: Development set (different databases from train)
+- **Test**: Test set (held out for evaluation, with separate database set)
 
 ## Why Spider?
 

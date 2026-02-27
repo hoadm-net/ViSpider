@@ -71,7 +71,7 @@ def main():
     print("\nLoading base model...")
     model = AutoModelForCausalLM.from_pretrained(
         base_model_id,
-        torch_dtype=dtype,
+        dtype=dtype,
         device_map="cpu",        # merge on CPU to avoid OOM
         trust_remote_code=True,
     )

@@ -11,80 +11,57 @@ Translate the entire Spider dataset from English to Vietnamese while maintaining
 
 ## Methodology Overview
 
-### Step 1: Gold Seed Construction ✅
-**Status**: In Progress
+### Step 1: Gold Seed Construction
 
-Build high-quality seed dataset through manual translation:
-- Translate samples covering all difficulty levels (Easy/Medium/Hard/Extra Hard)
-- Validate semantic alignment using LaBSE (cosine similarity ≥ 0.75)
-- Apply rule-based checks for SQL operators (COUNT, MAX/MIN, NOT, comparisons, GROUP BY, etc.)
-- Review and correct samples below quality threshold
+Manually translate a representative subset of Spider questions into Vietnamese via Label Studio. Translations are validated using LaBSE semantic similarity and rule-based SQL operator checks. Low-quality samples are flagged for review and re-translation.
 
-**Output**: Gold standard human-translated dataset
+**Scripts**: `scripts/phase1_manual/`  
+**Output**: `data/manual_translations/vispider_train_2000.json`
 
 ### Step 2: GPT Expansion ✅
 **Status**: Complete
 
-Expand dataset using GPT with few-shot prompting:
-- Intra-class diversity: 3 diverse examples with same SQL pattern
-- Real-time validation: LaBSE ≥ 0.75 + operator keywords
-- Tiered retry: 3 examples on first attempt, 5 new examples + hint on second
-- Checkpoint every 100 samples for recovery
+Expand the dataset using GPT with few-shot prompting. Diverse examples with the same SQL pattern are selected from the gold seed as few-shot context. Each translation is validated in real time against LaBSE similarity and SQL operator consistency; failed samples are automatically retried with a different prompt. Progress is saved to checkpoints and automatically resumed on restart.
 
-**Output**: GPT-translated dataset with validation
+**Scripts**: `scripts/phase2_chatgpt/`  
+**Output**: `data/chatgpt_translations/gpt_translations_final.json`
 
 ### Step 3: Dataset Assembly ✅
 **Status**: Complete
 
-Merge human and synthetic data:
-- Combine gold seed + GPT expansion (deduplication by ID, Phase 1 priority)
-- Stratified split by source × hardness — 80/10/10 (train/dev/test)
-- Canonical format: `{id, db_id, question, vi_question, query, hardness, sql_patterns, source}`
+Merge gold seed and GPT-translated data, deduplicate by sample ID (gold seed takes priority), then split into train/dev/test sets with stratified sampling by source and difficulty level.
 
+**Script**: `scripts/phase3_finetune/01_merge_and_split.py`  
 **Output**: `data/merged/` — unified train/dev/test split
 
-### Step 4: Fine-tune Translation Model 🔄
-**Status**: In Progress
+### Step 4: Fine-tune Translation Model ✅
+**Status**: Complete
 
-Train specialized translation model:
-- Architecture: Qwen2.5-7B-Instruct with QLoRA (4-bit nf4, LoRA r=16)
-- Task format: `(EN question + SQL + db_id) → VI question`
-- Prompt format: Qwen2.5 ChatML (`<|im_start|>system/user/assistant<|im_end|>`)
-- Optimizer: `paged_adamw_8bit`, 3 epochs, cosine LR scheduler
-- Scripts: `scripts/phase3_finetune/02_finetune.py`, `03_merge_adapter.py`
+Fine-tune Qwen2.5-7B-Instruct with QLoRA on the merged dataset for the task `(EN question + SQL + db_id) → VI question`. After training, merge the LoRA adapter into a standalone model.
 
-**Output**: Fine-tuned Qwen2.5 adapter + merged standalone model
+**Scripts**: `scripts/phase3_finetune/02_finetune.py`, `03_merge_adapter.py`  
+**Output**: `models/qwen25_vispider_merged/`
 
 ### Step 5: Pre-Scaling Evaluation 🔄
 **Status**: Planned
 
-Validate model quality before full-scale deployment:
-- Benchmark on held-out samples
-- Compare model outputs vs GPT baselines
-- Metrics: LaBSE similarity, operator consistency, performance on Hard subset
-- Decision gate: Proceed to scaling only if quality thresholds met
+Evaluate the fine-tuned model on the held-out dev and test sets using LaBSE similarity. This acts as a quality gate before full-scale translation.
 
-**Output**: Model quality report and scaling decision
+**Script**: `scripts/phase3_finetune/04_evaluate.py`  
+**Output**: `results/quality_analysis/`
 
 ### Step 6: Full Dataset Translation (Hybrid Scaling) 🔄
 **Status**: Planned
 
-Translate remaining Spider dataset using hybrid approach:
-- Primary: Fine-tuned model translates all remaining samples
-- Quality filter: LaBSE checks each output
-- Fallback: Low-confidence samples routed to GPT for re-translation
-- Final validation: Rule-based operator consistency across all samples
+Translate the remaining Spider samples using the fine-tuned model. Outputs that do not meet the quality threshold are automatically re-routed to GPT as a fallback.
 
-**Output**: Complete Vietnamese Spider dataset
+**Scripts**: `scripts/phase3_finetune/` *(in development)*  
+**Output**: `data/model_translations/`
 
 ### Step 7: Final Quality Control 🔄
 **Status**: Planned
 
-Comprehensive dataset validation:
-- Compute LaBSE similarity distribution across full dataset
-- Verify difficulty level distribution matches original Spider
-- Spot-check representative samples
-- Generate quality report and dataset statistics
+Validate the complete dataset: LaBSE similarity distribution, difficulty-level balance, and spot checks. Generate the final quality report.
 
 **Output**: Production-ready ViSpider dataset
 
@@ -94,21 +71,22 @@ Comprehensive dataset validation:
 ViSpider/
 ├── data/
 │   ├── raw/                      # Original Spider dataset
+│   ├── extracted/                # Simplified extraction of raw data
 │   ├── manual_translations/      # Step 1: Gold seed (human)
 │   ├── chatgpt_translations/     # Step 2: GPT expansion
-│   ├── merged/                   # Step 3: Assembly (train/dev/test split)
+│   ├── merged/                   # Step 3: Train/dev/test split
 │   └── model_translations/       # Step 6: Hybrid scaling output
 │
 ├── scripts/
 │   ├── phase0_prepare/           # Step 0: Data extraction
 │   ├── phase1_manual/            # Step 1: Manual translation pipeline
 │   ├── phase2_chatgpt/           # Step 2: GPT translation
-│   ├── phase3_finetune/          # Steps 3-7: Dataset assembly, model training & scaling
-│   └── utils/                    # Shared utilities
+│   ├── phase3_finetune/          # Steps 3–7: Assembly, training & scaling
+│   └── utils/                    # Shared utilities (LaBSE, embeddings)
 │
 ├── models/                       # Trained model weights (gitignored)
 ├── results/                      # Analysis outputs (gitignored)
-├── experiments/                  # Experimental code (gitignored)
+├── logs/                         # Training logs (gitignored)
 └── docs/                         # Documentation
 ```
 
@@ -144,7 +122,7 @@ pip install -r requirements.txt
 ### Step 1: Manual Translation Pipeline
 
 ```bash
-# Phase 1: Manual Translation
+# Phase 1: Parse and process manual translations
 cd scripts/phase1_manual
 python3 01_parse_label_studio.py
 python3 02_compute_embeddings.py
@@ -152,56 +130,29 @@ python3 02b_extract_sql_patterns.py
 python3 03_analyze_quality.py
 python3 04_extract_low_quality.py
 python3 05_filter_by_quality.py
+python3 06_review_samples.py
 
-# Phase 2: GPT Expansion
-cd scripts/phase2_chatgpt
-python3 01_select_samples_for_gpt.py -n 3000
+# Phase 2: GPT expansion
+cd ../phase2_chatgpt
+python3 01_select_samples_for_gpt.py
 python3 02_translate_with_validation.py
 
-# 4. Extract low-quality samples for review
-python3 04_extract_low_quality.py
-
-# 5. Filter high-quality dataset
-python3 05_filter_by_quality.py
-
-# 6. Review samples interactively
-python3 06_review_samples.py
+# Phase 3: Fine-tune and evaluate
+cd ../phase3_finetune
+python3 01_merge_and_split.py
+python3 02_finetune.py
+python3 03_merge_adapter.py
+python3 04_evaluate.py
 ```
-
-## Quality Validation Methods
-
-### Semantic Validation (LaBSE)
-
-Translation quality measured using **LaBSE** (Language-agnostic BERT Sentence Embeddings):
-- **Metric**: Cosine similarity between EN/VI embeddings
-- **Threshold**: ≥ 0.75 for acceptable quality
-- **Model**: `sentence-transformers/LaBSE`
-- **Purpose**: Ensures semantic equivalence across languages
-
-**Quality Bands**:
-- **≥ 0.85**: Excellent - semantic equivalence preserved
-- **0.75-0.85**: Good - minor nuance differences
-- **0.65-0.75**: Acceptable - requires review
-- **< 0.65**: Poor - requires re-translation
-
-### Rule-Based Validation
-
-SQL operator consistency checks:
-- **Aggregations**: COUNT, SUM, AVG, MIN, MAX
-- **Comparisons**: >, <, >=, <=, =, !=
-- **Logic**: AND, OR, NOT
-- **Grouping**: GROUP BY, HAVING
-- **Set Operations**: UNION, INTERSECT, EXCEPT
-- **Subqueries**: Nested query structure
-
-**Purpose**: Ensures SQL semantics preserved in translation
 
 ## Documentation
 
-- [Spider Dataset Overview](docs/SPIDER_OVERVIEW.md) - Original dataset details
-- [LaBSE Embeddings](docs/LABSE_EMBEDDINGS.md) - Quality assessment methodology
+- [Quick Reference](docs/QUICK_REFERENCE.md) - All commands and troubleshooting
 - [Phase 1 Manual Translation](docs/PHASE1_MANUAL.md) - Manual translation workflow
-- [Quick Reference](docs/QUICK_REFERENCE.md) - Commands and troubleshooting
+- [Phase 2 GPT Expansion](docs/PHASE2_CHATGPT.md) - GPT translation workflow
+- [Phase 3 Fine-tuning](docs/PHASE3_FINETUNE.md) - Model training and evaluation
+- [LaBSE Embeddings](docs/LABSE_EMBEDDINGS.md) - Quality assessment methodology
+- [Spider Dataset Overview](docs/SPIDER_OVERVIEW.md) - Original dataset details
 
 ## Requirements
 
@@ -230,27 +181,7 @@ Each sample in ViSpider contains:
 
 ## Contributing
 
-Contributions are welcome across all pipeline steps:
-
-**Step 1 - Manual Translation**:
-- Review and correct low-quality translations
-- Translate additional samples in Label Studio
-- Validate semantic alignment
-
-**Step 2 - GPT Expansion**:
-- Improve few-shot prompt engineering
-- Implement batch translation pipeline
-- Optimize GPT API usage
-
-**Steps 4-6 - Model Fine-tuning & Scaling**:
-- Experiment with model architectures
-- Optimize LoRA/QLoRA configurations
-- Implement hybrid translation fallback logic
-
-**Step 7 - Quality Control**:
-- Develop additional validation rules
-- Create visualization tools
-- Write quality analysis reports
+Contributions are welcome. Please open an issue or submit a pull request for any step of the pipeline.
 
 ## License
 

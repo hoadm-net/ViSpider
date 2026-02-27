@@ -215,37 +215,49 @@ def create_translation_prompt(target: Dict, fewshot_examples: List[Dict], extra_
     return prompt
 
 
+# Reasoning models that use the Responses API with reasoning= parameter
+_REASONING_MODELS = {'o1', 'o1-mini', 'o3', 'o3-mini', 'o4-mini', 'gpt-5-mini'}
+
+
+def _is_reasoning_model(model: str) -> bool:
+    """Return True if model uses the Responses API with reasoning parameter."""
+    return any(model.startswith(m) or model == m for m in _REASONING_MODELS)
+
+
 def call_gpt_translate(client: OpenAI, prompt: str, model: str) -> str:
-    """Call GPT API for translation using new responses API."""
+    """Call GPT API for translation.
+
+    - Reasoning models (o-series, gpt-5-mini): use Responses API with reasoning.
+    - Standard models (gpt-4o, gpt-4o-mini, etc.): use Chat Completions API.
+    """
     try:
-        response = client.responses.create(
-            model=model,
-            input=[
-                {
-                    "role": "user",
-                    "content": [
-                        {
-                            "type": "input_text",
-                            "text": prompt
-                        }
-                    ]
-                }
-            ],
-            text={
-                "format": {"type": "text"},
-                "verbosity": "medium"
-            },
-            reasoning={
-                "effort": "low"  # Reduce reasoning tokens
-            },
-            store=False,  # Don't store for privacy
-            include=[]  # Don't include reasoning content
-        )
-        
-        # Extract translation from response
-        translation = response.output_text.strip()
+        if _is_reasoning_model(model):
+            response = client.responses.create(
+                model=model,
+                input=[
+                    {
+                        "role": "user",
+                        "content": [{"type": "input_text", "text": prompt}]
+                    }
+                ],
+                text={"format": {"type": "text"}},
+                reasoning={"effort": "low"},
+                store=False,
+                include=[],
+            )
+            translation = response.output_text.strip()
+        else:
+            # Standard Chat Completions API
+            response = client.chat.completions.create(
+                model=model,
+                messages=[{"role": "user", "content": prompt}],
+                temperature=0.3,
+                max_tokens=256,
+            )
+            translation = response.choices[0].message.content.strip()
+
         return translation
-        
+
     except Exception as e:
         print(f"  ❌ GPT API error: {e}")
         return None
@@ -370,23 +382,39 @@ def main():
     with open(target_file, 'r', encoding='utf-8') as f:
         target_samples = json.load(f)
     print(f"✓ Loaded {len(target_samples)} target samples\n")
-    
+
     # Output directory
     output_dir = PROJECT_ROOT / 'data/chatgpt_translations'
     output_dir.mkdir(exist_ok=True)
-    
+
+    # ── Resume from checkpoint ────────────────────────────────────────────
+    results: List[Dict] = []
+    failed_samples: List[Dict] = []
+    done_ids: Set[str] = set()
+
+    checkpoint_files = sorted(output_dir.glob('gpt_translations_checkpoint_*.json'))
+    if checkpoint_files:
+        latest_ckpt = checkpoint_files[-1]
+        print(f"🔄 Resuming from checkpoint: {latest_ckpt.name}")
+        with open(latest_ckpt, 'r', encoding='utf-8') as f:
+            results = json.load(f)
+        done_ids = {r['id'] for r in results}
+        print(f"   Already translated: {len(done_ids)} samples — skipping these.\n")
+    else:
+        print("No checkpoint found — starting from scratch.\n")
+
     # Translation loop
     print("="*80)
     print("TRANSLATION PROGRESS")
     print("="*80)
     print()
-    
-    results = []
-    failed_samples = []
-    
+
     start_time = time.time()
-    
+
     for idx, target in enumerate(target_samples, 1):
+        # Skip already-translated samples when resuming
+        if target['id'] in done_ids:
+            continue
         print(f"[{idx}/{len(target_samples)}] {target['id']}")
         
         success = False

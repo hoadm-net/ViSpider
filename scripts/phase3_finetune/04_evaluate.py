@@ -82,12 +82,17 @@ def load_model(args):
 
     tokenizer = AutoTokenizer.from_pretrained(model_path, trust_remote_code=True)
 
+    # Left-padding is required for correct batch inference with decoder-only models
+    tokenizer.padding_side = "left"
+    if tokenizer.pad_token is None:
+        tokenizer.pad_token = tokenizer.eos_token
+
     if is_adapter:
         from peft import PeftModel
         print(f"Loading base model: {args.base}")
         model = AutoModelForCausalLM.from_pretrained(
             args.base,
-            torch_dtype=torch.bfloat16,
+            dtype=torch.bfloat16,
             device_map="auto",
             trust_remote_code=True,
         )
@@ -97,7 +102,7 @@ def load_model(args):
         print(f"Loading merged model: {model_path}")
         model = AutoModelForCausalLM.from_pretrained(
             str(model_path),
-            torch_dtype=torch.bfloat16,
+            dtype=torch.bfloat16,
             device_map="auto",
             trust_remote_code=True,
         )
@@ -108,6 +113,7 @@ def load_model(args):
 
 def batch_generate(model, tokenizer, prompts: list, max_new_tokens: int) -> list:
     import torch
+    # padding_side must be "left" (set in load_model) for decoder-only batch inference
     inputs = tokenizer(
         prompts,
         return_tensors="pt",
@@ -121,7 +127,6 @@ def batch_generate(model, tokenizer, prompts: list, max_new_tokens: int) -> list
             **inputs,
             max_new_tokens=max_new_tokens,
             do_sample=False,
-            temperature=1.0,
             pad_token_id=tokenizer.eos_token_id,
         )
 

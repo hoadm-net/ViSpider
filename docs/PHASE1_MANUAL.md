@@ -2,9 +2,7 @@
 
 ## Overview
 
-Phase 1 focuses on manually translating 2,000 high-quality samples from the Spider dataset into Vietnamese. This creates the foundation for subsequent automated translation phases.
-
-**Goal**: Produce high-quality Vietnamese translations with LaBSE similarity >= 0.75
+Phase 1 focuses on manually translating a representative subset of the Spider dataset into Vietnamese. This creates the gold seed for subsequent automated translation phases.
 
 ## Workflow Steps
 
@@ -47,36 +45,12 @@ Phase 1 focuses on manually translating 2,000 high-quality samples from the Spid
 ### Step 3: Compute Embeddings
 **Script**: `scripts/phase1_manual/02_compute_embeddings.py`
 
-**Purpose**: Generate LaBSE embeddings for English and Vietnamese questions
-
-**Features**:
-- Batch processing for efficiency
-- Automatic caching to resume interrupted runs
-- Cosine similarity computation
-- Progress tracking with tqdm
+**Purpose**: Generate LaBSE embeddings for English and Vietnamese question pairs and compute cosine similarity for each.
 
 ### Step 3b: Extract SQL Patterns (Rule-Based Validation)
 **Script**: `scripts/phase1_manual/02b_extract_sql_patterns.py`
 
-**Purpose**: Extract SQL operators and patterns from queries for validation
-
-**Features**:
-- Detects 30+ SQL patterns (aggregations, joins, subqueries, etc.)
-- Categorizes query complexity (basic/intermediate/advanced/expert)
-- Validates SQL structure preservation
-- Generates pattern distribution statistics
-
-**Output Fields Added**:
-- `sql_patterns`: List of operators (e.g., ["SELECT", "COUNT", "GROUP_BY"])
-- `sql_complexity`: Complexity category
-
-**Validation Coverage**:
-- Aggregations: COUNT, SUM, AVG, MIN, MAX
-- Comparisons: =, !=, >, <, >=, <=, LIKE, IN, BETWEEN
-- Logic: AND, OR, NOT
-- Grouping: GROUP BY, HAVING, ORDER BY
-- Set Operations: UNION, INTERSECT, EXCEPT
-- Subqueries: Single and nested
+**Purpose**: Extract SQL operators and patterns from queries for rule-based validation. Categorizes query complexity and validates SQL structure preservation.
 
 ### Step 4: Quality Analysis
 **Script**: `scripts/phase1_manual/03_analyze_quality.py`
@@ -92,12 +66,7 @@ Phase 1 focuses on manually translating 2,000 high-quality samples from the Spid
 ### Step 5: Extract Low-Quality Samples
 **Script**: `scripts/phase1_manual/04_extract_low_quality.py`
 
-**Purpose**: Identify samples needing review (similarity < 0.75)
-
-**Categorization**:
-- **Severe** (< 0.50): Wrong translation or translator notes
-- **Moderate** (0.50 - 0.60): Significant semantic drift
-- **Mild** (0.60 - 0.75): Minor quality issues
+**Purpose**: Identify samples below the quality threshold that need manual review.
 
 ### Step 6: Manual Review & Re-translation
 **Script**: `scripts/phase1_manual/06_review_samples.py`
@@ -115,7 +84,7 @@ Phase 1 focuses on manually translating 2,000 high-quality samples from the Spid
 
 **Purpose**: Create filtered dataset with only high-quality translations
 
-**Threshold**: similarity >= 0.75 (configurable)
+**Threshold**: Configurable similarity cutoff (see script defaults)
 
 ## File Locations
 
@@ -156,7 +125,6 @@ python3 05_filter_by_quality.py
 ## Quality Criteria
 
 **Acceptable Translation**:
-- LaBSE similarity >= 0.75
 - Preserves semantic intent
 - Natural Vietnamese phrasing
 - Correct understanding of schema context

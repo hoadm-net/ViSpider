@@ -96,6 +96,7 @@ def stratified_split(
     (source × hardness) distribution as much as possible.
     """
     rng = random.Random(seed)
+    test_ratio = 1.0 - train_ratio - dev_ratio  # derive instead of using global constant
 
     # Group by stratum
     strata: dict[str, list] = defaultdict(list)
@@ -109,7 +110,7 @@ def stratified_split(
         rng.shuffle(group)
         n = len(group)
         n_dev  = max(1, round(n * dev_ratio))
-        n_test = max(1, round(n * TEST_RATIO))
+        n_test = max(1, round(n * test_ratio))
         n_train = n - n_dev - n_test
 
         if n_train <= 0:
